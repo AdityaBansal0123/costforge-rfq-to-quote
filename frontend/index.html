@@ -1,0 +1,3193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CostForge Chakan — RFQ-to-Quote Costing Workbench | Company A Precision Auto Components</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #F3F6FC;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #EEF2FF;
+      --text-primary: #0F172A;
+      --text-secondary: #334155;
+      --text-muted: #64748B;
+      --border-light: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --accent-navy: #4F46E5;
+      --accent-navy-hover: #4338CA;
+      --status-green: #059669;
+      --status-amber: #D97706;
+      --status-red: #E11D48;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.13) 0px, transparent 48%),
+        radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.13) 0px, transparent 48%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 55%);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      font-size: 13.5px;
+      line-height: 1.48;
+      -webkit-font-smoothing: antialiased;
+    }
+    .mono, .num {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Keyframe Animations */
+    @keyframes viewEntrance {
+      0% { opacity: 0; transform: translateY(12px) scale(0.992); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes rowSlideIn {
+      0% { opacity: 0; transform: translateX(-8px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); transform: scale(1); }
+      50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); transform: scale(1.12); }
+    }
+    @keyframes laserSweep {
+      0% { transform: translateY(0px); opacity: 0.25; }
+      50% { transform: translateY(105px); opacity: 0.95; }
+      100% { transform: translateY(0px); opacity: 0.25; }
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes valueFlash {
+      0% { background-color: rgba(99, 102, 241, 0.22); }
+      100% { background-color: transparent; }
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-3px); }
+    }
+
+    main > section:not(.hidden) {
+      animation: viewEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .aurora-header {
+      background: linear-gradient(125deg, #090D1A 0%, #161F42 45%, #1E1B4B 75%, #0F172A 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 14s ease infinite;
+    }
+
+    .kpi-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+    }
+    .kpi-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 30px -6px rgba(79, 70, 229, 0.16);
+      border-color: rgba(99, 102, 241, 0.45);
+    }
+    .kpi-card-indigo { border-top: 3px solid #4F46E5; }
+    .kpi-card-emerald { border-top: 3px solid #10B981; }
+    .kpi-card-cyan { border-top: 3px solid #0EA5E9; }
+    .kpi-card-amber { border-top: 3px solid #F59E0B; }
+
+    .surface-card {
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 6px 24px -6px rgba(15, 23, 42, 0.05);
+      transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .surface-card:hover {
+      box-shadow: 0 12px 28px -8px rgba(30, 58, 138, 0.09);
+    }
+
+    .cost-grid-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .cost-grid-table th {
+      background: linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 100%);
+      color: #312E81;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      padding: 9px 11px;
+      border-top: 1px solid #C7D2FE;
+      border-bottom: 1px solid #C7D2FE;
+      text-align: left;
+    }
+    .cost-grid-table th.num, .cost-grid-table td.num {
+      text-align: right;
+    }
+    .cost-grid-table tbody tr {
+      animation: rowSlideIn 0.28s ease-out both;
+      transition: background-color 0.18s ease, transform 0.18s ease;
+    }
+    .cost-grid-table tbody tr:hover {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.07) 0%, rgba(14, 165, 233, 0.04) 100%);
+    }
+    .cost-grid-table td {
+      padding: 8px 11px;
+      border-bottom: 1px solid #E2E8F0;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    .cost-grid-table tr.subtotal-row td {
+      background: linear-gradient(90deg, #EEF2FF 0%, #F8FAFC 100%);
+      color: #1E1B4B;
+      font-weight: 600;
+      border-top: 1px solid #C7D2FE;
+      border-bottom: 1px solid #C7D2FE;
+    }
+    .cost-grid-table tr.total-row td {
+      background: linear-gradient(120deg, #1E1B4B 0%, #312E81 50%, #1E3A8A 100%);
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 13.5px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .cost-grid-table tr.gst-row td {
+      background: linear-gradient(90deg, #ECFEFF 0%, #EFF6FF 100%);
+      color: #0369A1;
+      font-weight: 600;
+    }
+    .dense-input {
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 13px;
+      background: #FFFFFF;
+      color: #0F172A;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .dense-input:hover {
+      border-color: #818CF8;
+    }
+    .dense-input:focus {
+      outline: none;
+      border-color: #4F46E5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+      transform: translateY(-1px);
+    }
+    .dense-input:disabled {
+      background: #F1F5F9;
+      color: #64748B;
+      cursor: not-allowed;
+    }
+    .nav-tab {
+      position: relative;
+      padding: 11px 15px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-tab:hover {
+      color: #312E81;
+      background: rgba(99, 102, 241, 0.06);
+    }
+    .nav-tab.active {
+      color: #4338CA;
+      border-bottom-color: #4F46E5;
+      font-weight: 700;
+      background: linear-gradient(180deg, rgba(238, 242, 255, 0.4) 0%, rgba(224, 231, 255, 0.85) 100%);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2.5px 8.5px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1.3;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .badge:hover {
+      transform: scale(1.04);
+    }
+    .btn-glow-primary {
+      background: linear-gradient(135deg, #4F46E5 0%, #2563EB 55%, #0284C7 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px -2px rgba(79, 70, 229, 0.42);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-glow-primary:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 20px -2px rgba(79, 70, 229, 0.58);
+      filter: brightness(1.06);
+    }
+    .btn-glow-primary:active {
+      transform: translateY(0px);
+    }
+    .btn-glow-emerald {
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.38);
+      transition: all 0.22s ease;
+    }
+    .btn-glow-emerald:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 18px -2px rgba(16, 185, 129, 0.52);
+    }
+    .btn-glow-amber {
+      background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px -2px rgba(245, 158, 11, 0.38);
+      transition: all 0.22s ease;
+    }
+    .btn-glow-amber:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 18px -2px rgba(245, 158, 11, 0.52);
+    }
+    .pulse-dot {
+      animation: pulseGlow 2s infinite;
+    }
+    .laser-line {
+      animation: laserSweep 3.4s ease-in-out infinite;
+    }
+    .cost-bar-seg {
+      transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .flash-val {
+      animation: valueFlash 0.55s ease-out;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #FFFFFF; background-image: none; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION & ROLE / NDA SECURITY BAR -->
+  <header class="aurora-header text-white border-b border-indigo-950/80 shadow-lg no-print sticky top-0 z-30">
+    <div class="max-w-[1440px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-400 flex items-center justify-center font-bold mono text-sm tracking-tighter shadow-md border border-white/25">
+          CA
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-sm tracking-tight">Company A Precision Auto Components</span>
+            <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 mono">Chakan MIDC Unit-II, Pune</span>
+          </div>
+          <div class="text-[11px] text-slate-400">RFQ-to-Quote Deterministic Costing &amp; Rate Governance System</div>
+        </div>
+      </div>
+
+      <!-- NDA Compliance & Active Role Switcher -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <div class="hidden md:flex items-center gap-1.5 text-[11px] bg-slate-800/90 border border-slate-700 px-2.5 py-1 rounded text-emerald-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+          <span>NDA Mode: Zero-Training Local/Enterprise AI</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded px-2 py-1">
+          <span class="text-[11px] text-slate-400">Signed in as:</span>
+          <select id="roleSelector" onchange="switchUserRole(this.value)" aria-label="Switch active user role" class="bg-slate-900 text-white text-xs font-medium px-2 py-1 rounded border border-slate-600 focus:outline-none focus:border-blue-400">
+            <option value="estimator">Rajesh Kulkarni (Senior Estimator)</option>
+            <option value="sales_head">Vikram Joshi (Sales Head — Approver)</option>
+            <option value="plant_head">Anand Shinde (Plant Head — Routing)</option>
+            <option value="md">S. Deshpande (Managing Director)</option>
+          </select>
+        </div>
+
+        <button type="button" onclick="openAuthModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded border border-slate-700 transition">
+          Session &amp; NDA Log
+        </button>
+      </div>
+    </div>
+
+    <!-- PRIMARY SCREEN TABS -->
+    <div class="bg-white border-b border-slate-200 text-slate-800">
+      <div class="max-w-[1440px] mx-auto px-4 flex items-center justify-between overflow-x-auto">
+        <nav class="flex items-center space-x-1" aria-label="Primary Views">
+          <button type="button" id="tabBtn-register" onclick="switchTab('register')" class="nav-tab active">
+            1. RFQ Register <span id="navBadgeRegister" class="ml-1 px-1.5 py-0.2 bg-slate-200 text-slate-800 rounded text-[11px] mono">6</span>
+          </button>
+          <button type="button" id="tabBtn-intake" onclick="switchTab('intake')" class="nav-tab">
+            2. AI RFQ Intake &amp; Extraction <span id="navBadgeIntake" class="ml-1 px-1.5 py-0.2 bg-amber-100 text-amber-800 rounded text-[11px] mono">Verify</span>
+          </button>
+          <button type="button" id="tabBtn-costing" onclick="switchTab('costing')" class="nav-tab">
+            3. Part Costing Workbench <span id="activeRfqPill" class="ml-1 px-1.5 py-0.2 bg-blue-100 text-blue-900 rounded text-[11px] mono">RFQ-2611-014</span>
+          </button>
+          <button type="button" id="tabBtn-rates" onclick="switchTab('rates')" class="nav-tab">
+            4. Versioned Rate Masters
+          </button>
+          <button type="button" id="tabBtn-approvals" onclick="switchTab('approvals')" class="nav-tab">
+            5. Approvals &amp; Routing Sign-Off <span id="navBadgeApprovals" class="ml-1 px-1.5 py-0.2 bg-rose-100 text-rose-800 rounded text-[11px] mono">3</span>
+          </button>
+          <button type="button" id="tabBtn-quote" onclick="switchTab('quote')" class="nav-tab">
+            6. PDF Quote &amp; Cost Breakup
+          </button>
+          <button type="button" id="tabBtn-history" onclick="switchTab('history')" class="nav-tab">
+            7. Past Quotes (1,400 Rows) &amp; Import
+          </button>
+        </nav>
+        <div class="hidden xl:flex items-center gap-3 py-1.5 text-xs text-slate-500 mono">
+          <span>Active Rate Snapshot: <strong id="headerRateVersion" class="text-slate-800">RM-2026-Q4 (Eff: 01 Oct 2026)</strong></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ROLE PERMISSION BANNER -->
+  <div id="roleContextStrip" class="bg-gradient-to-r from-indigo-50/90 via-sky-50/90 to-emerald-50/80 border-b border-indigo-100 px-4 py-2 text-xs text-slate-700 no-print">
+    <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div id="rolePermissionText">
+        <strong>Active Role — Estimator (Rajesh Kulkarni):</strong> Full access to AI RFQ intake acceptance, material/routing costing parameters, and volume tier simulation. Quotes exceeding ₹25.00 Lakh annual value require Sales Head approval before issue.
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="mono text-[11px] text-slate-500">Target SLA: ≤ 4.0 Working Days (Baseline: 9.0d) | Target Est. Time: ≤ 1.0 hr/part</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN WORKSPACE CONTAINER -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 py-5">
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 1: RFQ REGISTER & TURNAROUND SLA TRACKER                         -->
+    <!-- ===================================================================== -->
+    <section id="view-register" class="space-y-5">
+      <!-- Top KPI Strip grounded in Problem Statement math -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="kpi-card kpi-card-indigo p-4">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Active RFQs in Pipeline</span>
+            <span class="mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full font-semibold">Nov 2026</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiActiveCount" class="text-2xl font-extrabold mono bg-gradient-to-r from-indigo-700 to-blue-600 bg-clip-text text-transparent">4</span>
+            <span class="text-xs text-slate-600">Total Pipeline: <strong id="kpiPipelineValue" class="mono text-indigo-950">₹581.67 L</strong>/yr</span>
+          </div>
+          <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full rounded-full cost-bar-seg" style="width: 78%"></div>
+          </div>
+          <div class="mt-1.5 text-[11px] text-slate-500">60 RFQs/mo plant benchmark (300 parts/mo)</div>
+        </div>
+
+        <div class="kpi-card kpi-card-emerald p-4">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Quote Turnaround SLA</span>
+            <span class="mono text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">Target ≤ 4.0d</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-extrabold mono bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">2.8 days</span>
+            <span class="text-xs text-slate-600">Down from <strong class="mono text-rose-600 line-through">9.0d</strong></span>
+          </div>
+          <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
+            <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full cost-bar-seg" style="width: 69%"></div>
+          </div>
+          <div class="mt-1.5 text-[11px] text-slate-500">Prevents ₹86.4L/yr lost contribution from late replies</div>
+        </div>
+
+        <div class="kpi-card kpi-card-cyan p-4">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Estimator Cycle Time / Part</span>
+            <span class="mono text-[11px] text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full font-semibold">Target ≤ 1.0h</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span class="text-2xl font-extrabold mono bg-gradient-to-r from-sky-600 to-indigo-600 bg-clip-text text-transparent">0.75 hrs</span>
+            <span class="text-xs text-slate-600">vs <strong class="mono text-slate-700">2.50 hrs</strong> Excel manual</span>
+          </div>
+          <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
+            <div class="bg-gradient-to-r from-sky-500 to-indigo-500 h-full rounded-full cost-bar-seg" style="width: 70%"></div>
+          </div>
+          <div class="mt-1.5 text-[11px] text-slate-500">Saves 6,300 estimator hrs/yr (₹28.35L/yr @ ₹450/hr)</div>
+        </div>
+
+        <div class="kpi-card kpi-card-amber p-4">
+          <div class="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Approval &amp; AI Governance</span>
+            <span class="mono text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-semibold">&gt; ₹25L Gate</span>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="kpiPendingApprovals" class="text-2xl font-extrabold mono bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent">3</span>
+            <span class="text-xs text-slate-600">Quotes &gt; ₹25L awaiting sign-off</span>
+          </div>
+          <div class="w-full bg-slate-100 h-1.5 rounded-full mt-2.5 overflow-hidden">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-full rounded-full cost-bar-seg" style="width: 100%"></div>
+          </div>
+          <div class="mt-1.5 text-[11px] text-slate-500">100% rate traceability to effective-date master</div>
+        </div>
+      </div>
+
+      <!-- Filter & Action Bar -->
+      <div class="bg-white border border-slate-200 rounded p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="relative">
+            <input type="text" id="registerSearchInput" oninput="renderRfqRegister()" placeholder="Search RFQ No, Customer, Part, Material..." class="dense-input w-64 pl-3 pr-3" />
+          </div>
+          <select id="registerStatusFilter" onchange="renderRfqRegister()" aria-label="Filter RFQs by status" class="dense-input">
+            <option value="ALL">All Statuses (6)</option>
+            <option value="Estimating">Estimating</option>
+            <option value="Pending Approval">Pending Approval (&gt; ₹25L)</option>
+            <option value="Sent">Sent to Customer</option>
+            <option value="Won">Won</option>
+            <option value="Lost">Lost (with reason)</option>
+          </select>
+          <select id="registerOwnerFilter" onchange="renderRfqRegister()" aria-label="Filter RFQs by owner" class="dense-input">
+            <option value="ALL">All Estimators</option>
+            <option value="Rajesh Kulkarni">Rajesh Kulkarni</option>
+            <option value="Priya Deshmukh">Priya Deshmukh</option>
+            <option value="Amitabh Borgaonkar">Amitabh Borgaonkar</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="switchTab('intake')" class="btn-glow-primary text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5">
+            <span>+ New AI RFQ Intake (Email / Excel / Drawing)</span>
+          </button>
+          <button type="button" onclick="openNewManualRfqModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-medium px-3 py-2 rounded transition">
+            + Quick Blank RFQ
+          </button>
+        </div>
+      </div>
+
+      <!-- RFQ Register Table -->
+      <div class="bg-white border border-slate-200 rounded overflow-hidden">
+        <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-600">Master RFQ Register — Chakan Plant</h2>
+          <span class="text-xs text-slate-500">Click any RFQ row or <strong>Open Costing</strong> to inspect multi-volume pricing &amp; rate snapshot</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="cost-grid-table">
+            <thead>
+              <tr>
+                <th>RFQ No</th>
+                <th>Received / Due (SLA)</th>
+                <th>Customer</th>
+                <th>Primary Part &amp; Spec</th>
+                <th class="num">Gross Wt (kg)</th>
+                <th class="num">Annual Vol</th>
+                <th class="num">Quoted ₹/pc (Ex-GST)</th>
+                <th class="num">Annual Value</th>
+                <th>Rate Snapshot</th>
+                <th>Owner</th>
+                <th>Status / Reason</th>
+                <th class="num">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rfqRegisterBody">
+              <!-- Populated dynamically by renderRfqRegister() -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 2: AI RFQ INTAKE (EMAIL + EXCEL LIST + DRAWING TITLE BLOCK)      -->
+    <!-- ===================================================================== -->
+    <section id="view-intake" class="hidden space-y-5">
+      <div class="bg-white border border-slate-200 rounded p-4">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-3.5">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-bold text-slate-900">AI RFQ Intake &amp; Drawing Title-Block Extractor</h2>
+              <span class="badge bg-blue-50 text-blue-900 border border-blue-200 mono">Human-in-the-Loop Verification</span>
+            </div>
+            <p class="text-xs text-slate-600 mt-1">
+              Extracts structured parameters from incoming customer RFQ emails, Excel part lists, and 2D CAD drawing title blocks.
+              <strong>Policy:</strong> AI never computes prices. Every pre-filled value displays its source document and confidence score, and requires explicit Estimator acceptance before quote lock.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="intakeSampleSelector" class="text-xs font-medium text-slate-600">Load Incoming RFQ Package:</label>
+            <select id="intakeSampleSelector" onchange="loadIntakeScenario(this.value)" class="dense-input font-medium">
+              <option value="RFQ-2611-014">RFQ-2611-014 — Company B (Rear wheel spindle, EN8)</option>
+              <option value="RFQ-2611-019">RFQ-2611-019 — Company C (Hydraulic lift arm, 40Cr4 forging)</option>
+              <option value="RFQ-2611-023">RFQ-2611-023 — Company D (Gear blank, 20MnCr5)</option>
+              <option value="RFQ-2611-031-AMBIGUOUS">RFQ-2611-031 — Company B (Stub Axle — Low-Confidence / Conflict Edge Case)</option>
+            </select>
+            <button type="button" onclick="runSimulatedAiExtraction()" class="btn-glow-primary text-xs font-semibold px-3.5 py-1.5 rounded-lg">
+              Re-Run AI Extraction
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Column Source Inspection + Field Acceptance + Routing Recommendation -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
+          <!-- Left Column (4 cols): Source Documents (Email + Excel + Drawing Title Block Preview) -->
+          <div class="lg:col-span-5 space-y-3">
+            <div class="bg-slate-50 border border-slate-200 rounded p-3">
+              <div class="flex items-center justify-between text-xs font-semibold text-slate-700 border-b border-slate-200 pb-1.5 mb-2">
+                <span>Source 1: Incoming RFQ Email &amp; Excel Part Row</span>
+                <span id="intakeEmailSourceTag" class="mono text-[11px] text-slate-500">MSG-2611-014.eml</span>
+              </div>
+              <pre id="intakeRawEmailText" class="text-xs mono whitespace-pre-wrap text-slate-700 bg-white p-2.5 rounded border border-slate-200 max-h-44 overflow-y-auto leading-relaxed"></pre>
+            </div>
+
+            <!-- Simulated 2D Engineering Drawing Title Block (Protected by NDA Watermark) -->
+            <div class="bg-slate-900 text-slate-100 border border-slate-800 rounded p-3 relative overflow-hidden">
+              <div class="flex items-center justify-between text-xs border-b border-slate-700 pb-2 mb-2.5">
+                <span class="font-semibold text-blue-300 mono" id="drawingFileName">DRW-CB-4410-REV-C.pdf (Title Block OCR)</span>
+                <span class="text-[11px] bg-rose-950 text-rose-200 border border-rose-800 px-2 py-0.5 rounded mono">NDA PROTECTED — NAMED USER: R. KULKARNI</span>
+              </div>
+              <!-- Blueprint SVG Schematic + Title Block Grid -->
+              <div id="drawingBlueprintPreview" class="bg-slate-950 border border-slate-800 rounded p-2.5 mb-2.5">
+                <!-- Populated dynamically with technical orthographic SVG & title block -->
+              </div>
+              <div id="drawingTitleBlockGrid" class="grid grid-cols-2 gap-1.5 text-xs mono bg-slate-950/90 p-2.5 rounded border border-slate-800">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column (7 cols): Extracted Fields with Confidence, Source & Estimator Acceptance -->
+          <div class="lg:col-span-7 space-y-4">
+            <div class="bg-white border border-slate-200 rounded">
+              <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700">AI-Extracted Parameters (Estimator Verification Required)</h3>
+                  <p id="intakeVerificationSummary" class="text-[11px] text-slate-500 mt-0.5"></p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="acceptAllHighConfidenceFields()" class="btn-glow-emerald text-xs font-semibold px-3 py-1.5 rounded-lg">
+                    Accept All High-Confidence (≥90%)
+                  </button>
+                  <button type="button" onclick="applyIntakeToWorkbench()" class="btn-glow-primary text-xs font-semibold px-3.5 py-1.5 rounded-lg">
+                    Push Verified Data to Costing Workbench →
+                  </button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="cost-grid-table">
+                  <thead>
+                    <tr>
+                      <th>Parameter</th>
+                      <th>Extracted / Editable Value</th>
+                      <th>Source Provenance</th>
+                      <th>AI Confidence</th>
+                      <th>Estimator Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody id="intakeFieldsTableBody">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- AI Routing Suggestion from Historical Similar Parts -->
+            <div class="bg-white border border-slate-200 rounded">
+              <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                  <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700">AI Suggested Routing from Past Quotes (Similarity Match)</h3>
+                  <p class="text-[11px] text-slate-500">Matched by Material Grade, Gross Weight envelope, and geometry family across 1,400 past quote rows</p>
+                </div>
+                <span id="routingMatchBadge" class="badge bg-emerald-50 text-emerald-800 border border-emerald-200 mono">96% Match</span>
+              </div>
+              <div id="intakeRoutingSuggestionsBox" class="p-3.5 space-y-3">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 3: PART COSTING WORKBENCH (DENSE, CALM FINANCIAL LAYOUT)         -->
+    <!-- ===================================================================== -->
+    <section id="view-costing" class="hidden space-y-4">
+      <!-- Top Selector & Snapshot Lock Strip -->
+      <div class="bg-white border border-slate-200 rounded p-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <div>
+            <label for="workbenchRfqSelector" class="block text-[11px] font-semibold uppercase text-slate-500">Active RFQ / Part</label>
+            <select id="workbenchRfqSelector" onchange="selectRfqForCosting(this.value)" class="dense-input font-semibold text-sm min-w-[290px]">
+              <!-- Populated from state.rfqs -->
+            </select>
+          </div>
+
+          <div>
+            <label for="workbenchRateMasterSelector" class="block text-[11px] font-semibold uppercase text-slate-500">Locked Rate Master Snapshot</label>
+            <select id="workbenchRateMasterSelector" onchange="changeRfqRateSnapshot(this.value)" class="dense-input mono text-xs">
+              <option value="RM-2026-Q4">RM-2026-Q4 (Eff: 01 Oct 2026 — Current Active)</option>
+              <option value="RM-2026-Q3">RM-2026-Q3 (Eff: 01 Jul 2026 — Historical Q3)</option>
+              <option value="RM-2026-Q1">RM-2026-Q1 (Eff: 01 Jan 2026 — Legacy ERP Import)</option>
+            </select>
+          </div>
+
+          <div class="border-l border-slate-200 pl-3">
+            <div class="text-[11px] font-semibold uppercase text-slate-500">AI Intake Verification</div>
+            <div id="workbenchAiStatusBadge" class="mt-1"></div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="resetCurrentRfqToSampleBaseline()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded border border-slate-300 transition">
+            Reset to Sample Baseline
+          </button>
+          <button type="button" onclick="submitCurrentRfqForApproval()" class="btn-glow-amber text-xs font-semibold px-3.5 py-1.5 rounded-lg">
+            Submit for Approval / Routing Check
+          </button>
+          <button type="button" onclick="switchTab('quote')" class="btn-glow-primary text-xs font-semibold px-3.5 py-1.5 rounded-lg">
+            Generate PDF Quote Breakup →
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Costing Grid: Left 7 Cols (Material + Routing Inputs), Right 5 Cols (Multi-Volume Sheet) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- LEFT COLUMN: MATERIAL, WEIGHTS, ROUTING & OVERHEAD PARAMETERS -->
+        <div class="lg:col-span-7 space-y-4">
+
+          <!-- 1. Material & Scrap Recovery Card -->
+          <div class="bg-white border border-slate-200 rounded">
+            <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-700">A. Raw Material, Forging / Bar Weight &amp; Scrap Recovery</span>
+              <span id="materialMasterSourceLabel" class="mono text-[11px] text-slate-500"></span>
+            </div>
+            <div class="p-3.5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="costMatGrade" class="block text-xs font-medium text-slate-600 mb-1">Material Grade (Master)</label>
+                <select id="costMatGrade" onchange="onMaterialGradeChange(this.value)" class="dense-input w-full font-medium">
+                  <option value="EN8">EN8 (BS 970 080M40 Bar)</option>
+                  <option value="40Cr4 forging">40Cr4 forging (Closed-Die)</option>
+                  <option value="20MnCr5">20MnCr5 (Case Hardening Steel)</option>
+                  <option value="SAE8620">SAE8620 (Alloy Gear Steel)</option>
+                </select>
+              </div>
+              <div>
+                <label for="costGrossWt" class="block text-xs font-medium text-slate-600 mb-1">Input Gross Wt (kg)</label>
+                <input type="number" id="costGrossWt" step="0.01" min="0.01" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+              <div>
+                <label for="costNetWt" class="block text-xs font-medium text-slate-600 mb-1">Finished Net Wt (kg)</label>
+                <input type="number" id="costNetWt" step="0.01" min="0.01" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+              <div>
+                <label for="costMatRate" class="block text-xs font-medium text-slate-600 mb-1">Base Material Rate (₹/kg)</label>
+                <input type="number" id="costMatRate" step="0.5" min="1" oninput="updateCostingInputs()" class="dense-input w-full mono text-right bg-slate-50" />
+              </div>
+              <div>
+                <label for="costScrapRate" class="block text-xs font-medium text-slate-600 mb-1">Scrap Credit Rate (₹/kg)</label>
+                <input type="number" id="costScrapRate" step="0.5" min="0" oninput="updateCostingInputs()" class="dense-input w-full mono text-right bg-slate-50" />
+              </div>
+              <div>
+                <div class="text-xs font-medium text-slate-600 mb-1">Net Material Cost / Pc</div>
+                <div id="costNetMaterialDisplay" class="dense-input w-full mono text-right font-bold bg-slate-100 text-slate-900">₹0.00</div>
+              </div>
+            </div>
+            <div class="px-3.5 py-2 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 flex flex-wrap justify-between gap-2 mono">
+              <span id="materialFormulaExplain">Gross Cost - Swarf Recovery (90% recovery factor)</span>
+              <span id="scrapWeightExplain">Swarf / Flash: 0.13 kg</span>
+            </div>
+          </div>
+
+          <!-- 2. Process Routing, Cycle Times & Machine Hour Rates -->
+          <div class="bg-white border border-slate-200 rounded">
+            <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-700">B. Manufacturing Routing, Cycle Times &amp; Machine Hour Rates</span>
+                <span id="routingProvenanceLabel" class="block text-[11px] text-slate-500"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="addRoutingOperation()" class="text-xs bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-2.5 py-1 rounded font-medium transition">
+                  + Add Operation Step
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="cost-grid-table">
+                <thead>
+                  <tr>
+                    <th>Op #</th>
+                    <th>Workcenter / Process Step</th>
+                    <th class="num">Cycle Time (min)</th>
+                    <th class="num">Hour Rate (₹/hr)</th>
+                    <th class="num">Setup (min)</th>
+                    <th class="num">Run Cost (₹/pc)</th>
+                    <th class="num">Del</th>
+                  </tr>
+                </thead>
+                <tbody id="routingOpsTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+                <tfoot>
+                  <tr class="subtotal-row">
+                    <td colspan="2">Total Machining &amp; Forming Conversion (Excl. Setup)</td>
+                    <td id="totalCycleTimeCell" class="num mono">3.20 min</td>
+                    <td id="weightedHourRateCell" class="num mono">₹850/hr</td>
+                    <td id="totalSetupTimeCell" class="num mono">90 min</td>
+                    <td id="totalRunCostCell" class="num mono">₹45.33</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. Overheads, Scrap Allowance, Packing, Freight & Margin Controls -->
+          <div class="bg-white border border-slate-200 rounded">
+            <div class="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-700">C. Overheads, Rejection, Packing, Freight &amp; Target Margin</span>
+              <span class="mono text-[11px] text-slate-500">Deterministic Costing Formula</span>
+            </div>
+            <div class="p-3.5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <label for="costRejectionPct" class="block text-xs font-medium text-slate-600 mb-1">Process Rejection (%)</label>
+                <input type="number" id="costRejectionPct" step="0.1" min="0" max="25" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+              <div>
+                <label for="costOverheadPct" class="block text-xs font-medium text-slate-600 mb-1">Factory &amp; Admin OH (% Conv)</label>
+                <input type="number" id="costOverheadPct" step="0.5" min="0" max="100" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+              <div>
+                <label for="costPackingPerPc" class="block text-xs font-medium text-slate-600 mb-1">Packing Cost (₹/pc)</label>
+                <input type="number" id="costPackingPerPc" step="0.1" min="0" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+              <div>
+                <label for="costFreightPerPc" class="block text-xs font-medium text-slate-600 mb-1">Freight Cost (₹/pc)</label>
+                <input type="number" id="costFreightPerPc" step="0.1" min="0" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+              <div>
+                <label for="costMarginPct" class="block text-xs font-medium text-slate-600 mb-1">Target Margin (% on Cost)</label>
+                <input type="number" id="costMarginPct" step="0.5" min="0" max="50" oninput="updateCostingInputs()" class="dense-input w-full mono text-right font-semibold text-blue-900" />
+              </div>
+              <div>
+                <label for="costBatchesPerYear" class="block text-xs font-medium text-slate-600 mb-1">Production Batches / Yr</label>
+                <input type="number" id="costBatchesPerYear" step="1" min="1" max="52" oninput="updateCostingInputs()" class="dense-input w-full mono text-right" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: MULTI-VOLUME COSTING SHEET (3 VOLUMES SIDE BY SIDE) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="surface-card overflow-hidden">
+            <div class="px-4 py-3 aurora-header text-white flex items-center justify-between">
+              <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-100">Multi-Volume Costing Sheet (₹ / Piece)</h3>
+                <p class="text-[11px] text-slate-300">Fixed deterministic formulas across 3 volume tiers (12 batches/yr setup amortization)</p>
+              </div>
+              <span class="mono text-xs bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold px-2.5 py-1 rounded-full shadow">INR (₹)</span>
+            </div>
+            <!-- Live Animated Cost Structure Bar -->
+            <div class="px-3.5 py-2.5 bg-gradient-to-r from-indigo-50/70 via-white to-sky-50/70 border-b border-indigo-100">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1.5">
+                <span>Live Base Unit Cost Composition</span>
+                <span id="visualCostShareLegend" class="mono text-indigo-900">Mat · Conv · OH/Freight · Margin</span>
+              </div>
+              <div id="visualCostShareBar" class="w-full h-2.5 rounded-full bg-slate-200 overflow-hidden flex shadow-inner">
+                <div class="bg-indigo-600 h-full cost-bar-seg" style="width: 40%"></div>
+                <div class="bg-sky-500 h-full cost-bar-seg" style="width: 40%"></div>
+                <div class="bg-amber-500 h-full cost-bar-seg" style="width: 9%"></div>
+                <div class="bg-emerald-500 h-full cost-bar-seg" style="width: 11%"></div>
+              </div>
+            </div>
+
+            <!-- Editable Volume Tier Headers -->
+            <div class="p-3 bg-slate-50 border-b border-slate-200 grid grid-cols-3 gap-2">
+              <div>
+                <label for="volTier1Input" class="block text-[10px] font-semibold uppercase text-slate-500">Tier 1 (Pilot / 50%)</label>
+                <input type="number" id="volTier1Input" step="500" min="100" oninput="updateVolumeTiers()" class="dense-input w-full mono text-right text-xs mt-0.5" />
+              </div>
+              <div>
+                <label for="volTier2Input" class="block text-[10px] font-semibold uppercase text-blue-800">Tier 2 (RFQ Base Vol)</label>
+                <input type="number" id="volTier2Input" step="1000" min="100" oninput="updateVolumeTiers()" class="dense-input w-full mono text-right text-xs font-bold border-blue-400 bg-blue-50/40 mt-0.5" />
+              </div>
+              <div>
+                <label for="volTier3Input" class="block text-[10px] font-semibold uppercase text-slate-500">Tier 3 (Stretch / 150%)</label>
+                <input type="number" id="volTier3Input" step="1000" min="100" oninput="updateVolumeTiers()" class="dense-input w-full mono text-right text-xs mt-0.5" />
+              </div>
+            </div>
+
+            <!-- Aligned Multi-Volume Cost Breakdown Table -->
+            <div class="overflow-x-auto">
+              <table class="cost-grid-table">
+                <thead>
+                  <tr>
+                    <th>Cost Element</th>
+                    <th class="num mono" id="thVol1">90,000/yr</th>
+                    <th class="num mono bg-blue-50 text-blue-950" id="thVol2">180,000/yr</th>
+                    <th class="num mono" id="thVol3">270,000/yr</th>
+                  </tr>
+                </thead>
+                <tbody id="multiVolumeCostBody">
+                  <!-- Populated deterministically by renderCostingWorkbench() -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Approval Threshold & Margin Alert Box -->
+            <div id="costingGovernanceCallout" class="p-3.5 bg-slate-50 border-t border-slate-200 text-xs space-y-1.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 4: RATE MASTERS WITH EFFECTIVE DATES                             -->
+    <!-- ===================================================================== -->
+    <section id="view-rates" class="hidden space-y-5">
+      <div class="bg-white border border-slate-200 rounded p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Versioned Rate Masters (With Effective Dates &amp; Quote Immutability)</h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Single source of truth replacing manual ERP copy-paste. Each quote locks a snapshot ID (e.g., <code class="mono font-semibold">RM-2026-Q4</code>) so historical quotes always retain the exact rates effective when they were issued.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="openNewRateRevisionModal()" class="bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-3.5 py-2 rounded transition">
+              + Publish New Rate Master Revision
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
+          <!-- Material Rate Master Table -->
+          <div class="border border-slate-200 rounded overflow-hidden">
+            <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-700">Raw Material &amp; Scrap Credit Master (₹/kg)</span>
+              <span class="mono text-[11px] text-slate-500">Chakan Purchase Index</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="cost-grid-table">
+                <thead>
+                  <tr>
+                    <th>Snapshot</th>
+                    <th>Material Grade</th>
+                    <th class="num">Base Rate ₹/kg</th>
+                    <th class="num">Scrap ₹/kg</th>
+                    <th>Effective Window</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="materialRatesTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Machine Hour Rate Master Table -->
+          <div class="border border-slate-200 rounded overflow-hidden">
+            <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-700">Workcenter &amp; Machine Hour Rate Master (₹/hr)</span>
+              <span class="mono text-[11px] text-slate-500">Includes Power, Depr &amp; Operator</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="cost-grid-table">
+                <thead>
+                  <tr>
+                    <th>Snapshot</th>
+                    <th>Workcenter / Machine</th>
+                    <th class="num">Hour Rate ₹/hr</th>
+                    <th>Effective Window</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="machineRatesTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 5: APPROVAL WORKFLOW (> ₹25 LAKH GATE & PLANT HEAD ROUTING)      -->
+    <!-- ===================================================================== -->
+    <section id="view-approvals" class="hidden space-y-5">
+      <div class="bg-white border border-slate-200 rounded p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Approval Queue &amp; Plant Head Routing Verification</h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              <strong>Commercial Governance Rule:</strong> Quotes with Annual Value &gt; ₹25.00 Lakh require <strong>Sales Head</strong> approval before dispatch. <strong>Plant Head</strong> verifies cycle times and workcenter feasibility.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="px-2.5 py-1 rounded bg-slate-100 border border-slate-300 mono">Current Approver Role: <strong id="approvalViewRoleLabel">Estimator</strong></span>
+          </div>
+        </div>
+
+        <div id="approvalCardsContainer" class="space-y-3 mt-4">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 6: PDF QUOTE & FORMAL CUSTOMER COST BREAKUP                      -->
+    <!-- ===================================================================== -->
+    <section id="view-quote" class="hidden space-y-4">
+      <!-- Action Bar (Hidden in Print) -->
+      <div class="bg-white border border-slate-200 rounded p-3.5 flex flex-wrap items-center justify-between gap-3 no-print">
+        <div class="flex flex-wrap items-center gap-3">
+          <label for="quoteRfqSelector" class="text-xs font-semibold uppercase text-slate-500">Select Quote to Preview:</label>
+          <select id="quoteRfqSelector" onchange="selectRfqForCosting(this.value)" class="dense-input font-semibold text-sm">
+            <!-- Populated dynamically -->
+          </select>
+          <select id="quoteFormatToggle" onchange="renderQuoteSheet()" aria-label="Select quotation detail level" class="dense-input text-xs">
+            <option value="detailed">Tier-1 Open-Book Cost Breakup (Full Sheet)</option>
+            <option value="summary">Commercial Summary Quote Only</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="markQuoteSentToCustomer()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded transition">
+            Mark Quote as Sent to Customer
+          </button>
+          <button type="button" onclick="window.print()" class="bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-3.5 py-1.5 rounded transition">
+            Print / Save Official PDF Quote
+          </button>
+        </div>
+      </div>
+
+      <!-- Printable A4 Quote Document Sheet -->
+      <div id="printableQuoteDocument" class="bg-white border border-slate-300 rounded shadow-sm max-w-[960px] mx-auto p-6 sm:p-8 space-y-6">
+        <!-- Populated dynamically by renderQuoteSheet() -->
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 7: PAST QUOTES SEARCH & 1,400-ROW EXCEL IMPORTER                 -->
+    <!-- ===================================================================== -->
+    <section id="view-history" class="hidden space-y-5">
+      <div class="bg-white border border-slate-200 rounded p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Historical Quotes Repository &amp; Legacy Excel Importer</h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Search 1,400+ historical Chakan quotes by part geometry, material grade, or weight envelope to benchmark pricing and reuse proven routings.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="runLegacyExcelBatchImport()" class="bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-3.5 py-2 rounded transition">
+              Import Legacy Excel Quotes (Simulate 1,400-Row Batch)
+            </button>
+          </div>
+        </div>
+
+        <!-- Import Status Banner -->
+        <div id="excelImportStatusBanner" class="hidden mt-3 p-3 rounded bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
+          <div id="excelImportStatusText"></div>
+          <button type="button" onclick="closeImportBanner()" class="text-emerald-700 font-semibold hover:underline">Dismiss</button>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4">
+          <input type="text" id="historySearchQuery" oninput="renderHistoryTable()" placeholder="Search part name (e.g., spindle, gear, arm, flange)..." class="dense-input sm:col-span-2" />
+          <select id="historyMaterialFilter" onchange="renderHistoryTable()" aria-label="Filter past quotes by material" class="dense-input">
+            <option value="ALL">All Materials</option>
+            <option value="EN8">EN8</option>
+            <option value="40Cr4 forging">40Cr4 forging</option>
+            <option value="20MnCr5">20MnCr5</option>
+            <option value="SAE8620">SAE8620</option>
+          </select>
+          <select id="historyWeightFilter" onchange="renderHistoryTable()" aria-label="Filter past quotes by gross weight" class="dense-input">
+            <option value="ALL">All Weight Ranges</option>
+            <option value="LIGHT">&lt; 1.0 kg (Light Machined)</option>
+            <option value="MEDIUM">1.0 – 3.0 kg (Medium Gear/Shaft)</option>
+            <option value="HEAVY">&gt; 3.0 kg (Heavy Forging)</option>
+          </select>
+        </div>
+
+        <!-- Historical Quotes Table -->
+        <div class="overflow-x-auto mt-4 border border-slate-200 rounded">
+          <table class="cost-grid-table">
+            <thead>
+              <tr>
+                <th>Quote Ref &amp; Date</th>
+                <th>Customer</th>
+                <th>Part Description</th>
+                <th>Material</th>
+                <th class="num">Gross Wt (kg)</th>
+                <th class="num">Cycle (min)</th>
+                <th class="num">Hour Rate ₹</th>
+                <th class="num">Quoted ₹/pc</th>
+                <th>Rate Master Used</th>
+                <th>Outcome</th>
+                <th class="num">Reuse</th>
+              </tr>
+            </thead>
+            <tbody id="historyQuotesTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL 1: STATUS / WON-LOST REASON MODAL                                 -->
+  <!-- ======================================================================= -->
+  <div id="statusModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white border border-slate-300 rounded shadow-xl max-w-md w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+        <h3 class="text-sm font-bold text-slate-900" id="statusModalTitle">Update RFQ Status &amp; Win/Loss Reason</h3>
+        <button type="button" onclick="closeStatusModal()" class="text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label for="modalStatusSelect" class="block text-xs font-medium text-slate-700 mb-1">New Lifecycle Status</label>
+          <select id="modalStatusSelect" onchange="toggleLossReasonField()" class="dense-input w-full">
+            <option value="Estimating">Estimating</option>
+            <option value="Pending Approval">Pending Approval</option>
+            <option value="Sent">Sent to Customer</option>
+            <option value="Won">Won (Order Confirmed)</option>
+            <option value="Lost">Lost (Requires Loss Reason)</option>
+          </select>
+        </div>
+        <div id="lossReasonContainer" class="space-y-1">
+          <label for="modalLossReason" class="block text-xs font-medium text-slate-700">Win / Loss Reason or Commercial Note</label>
+          <select id="modalLossReasonPreset" onchange="applyLossPreset(this.value)" class="dense-input w-full mb-1.5">
+            <option value="">-- Select Common Chakan Plant Reason --</option>
+            <option value="Late reply (Quote submitted beyond 4-day SLA)">Lost: Late reply (Quote submitted beyond 4-day SLA)</option>
+            <option value="Price +4.2% above competitor Tier-1 target">Lost: Price +4.2% above competitor Tier-1 target</option>
+            <option value="Forging die lead time exceeded customer launch window">Lost: Forging die lead time exceeded customer launch window</option>
+            <option value="Won: Met 4-day SLA + competitive multi-volume tier pricing">Won: Met 4-day SLA + competitive multi-volume tier pricing</option>
+          </select>
+          <input type="text" id="modalLossReason" placeholder="Enter reason or PO reference..." class="dense-input w-full" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+        <button type="button" onclick="closeStatusModal()" class="text-xs px-3 py-1.5 rounded border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="saveRfqStatusChange()" class="text-xs px-3.5 py-1.5 rounded bg-blue-900 text-white font-semibold">Save Status</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL 2: NEW RATE REVISION MODAL                                        -->
+  <!-- ======================================================================= -->
+  <div id="rateRevisionModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white border border-slate-300 rounded shadow-xl max-w-lg w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+        <h3 class="text-sm font-bold text-slate-900">Publish New Effective-Dated Rate Master Revision</h3>
+        <button type="button" onclick="closeRateRevisionModal()" class="text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+      </div>
+      <p class="text-xs text-slate-600">
+        Creating a new revision (e.g., <code class="mono font-semibold">RM-2026-NOV</code>) sets an effective start date. Existing quotes locked to <code class="mono">RM-2026-Q4</code> or <code class="mono">RM-2026-Q3</code> remain untouched.
+      </p>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="newRateSnapshotId" class="block text-xs font-medium text-slate-700 mb-1">Revision Code</label>
+          <input type="text" id="newRateSnapshotId" value="RM-2026-NOV" class="dense-input w-full mono" />
+        </div>
+        <div>
+          <label for="newRateEffectiveDate" class="block text-xs font-medium text-slate-700 mb-1">Effective From Date</label>
+          <input type="date" id="newRateEffectiveDate" value="2026-11-05" class="dense-input w-full mono" />
+        </div>
+        <div>
+          <label for="newRateEN8" class="block text-xs font-medium text-slate-700 mb-1">EN8 Bar Rate (₹/kg)</label>
+          <input type="number" id="newRateEN8" value="81.0" step="0.5" class="dense-input w-full mono text-right" />
+        </div>
+        <div>
+          <label for="newRate40Cr4" class="block text-xs font-medium text-slate-700 mb-1">40Cr4 Forging (₹/kg)</label>
+          <input type="number" id="newRate40Cr4" value="108.0" step="0.5" class="dense-input w-full mono text-right" />
+        </div>
+        <div>
+          <label for="newRate20MnCr5" class="block text-xs font-medium text-slate-700 mb-1">20MnCr5 Steel (₹/kg)</label>
+          <input type="number" id="newRate20MnCr5" value="95.0" step="0.5" class="dense-input w-full mono text-right" />
+        </div>
+        <div>
+          <label for="newRateCncHour" class="block text-xs font-medium text-slate-700 mb-1">CNC Turning Rate (₹/hr)</label>
+          <input type="number" id="newRateCncHour" value="880" step="10" class="dense-input w-full mono text-right" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+        <button type="button" onclick="closeRateRevisionModal()" class="text-xs px-3 py-1.5 rounded border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="publishNewRateRevision()" class="text-xs px-3.5 py-1.5 rounded bg-blue-900 text-white font-semibold">Publish Rate Revision</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL 3: QUICK NEW MANUAL RFQ MODAL                                     -->
+  <!-- ======================================================================= -->
+  <div id="newManualRfqModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white border border-slate-300 rounded shadow-xl max-w-lg w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+        <h3 class="text-sm font-bold text-slate-900">Create New RFQ Entry</h3>
+        <button type="button" onclick="closeNewManualRfqModal()" class="text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="manualRfqNo" class="block text-xs font-medium text-slate-700 mb-1">RFQ Number</label>
+          <input type="text" id="manualRfqNo" value="RFQ-2611-035" class="dense-input w-full mono" />
+        </div>
+        <div>
+          <label for="manualCustomer" class="block text-xs font-medium text-slate-700 mb-1">Customer Name</label>
+          <input type="text" id="manualCustomer" value="Company B (two-wheelers)" class="dense-input w-full" />
+        </div>
+        <div class="col-span-2">
+          <label for="manualPartName" class="block text-xs font-medium text-slate-700 mb-1">Part Name</label>
+          <input type="text" id="manualPartName" value="Countershaft 3rd Gear Blank" class="dense-input w-full" />
+        </div>
+        <div>
+          <label for="manualMaterial" class="block text-xs font-medium text-slate-700 mb-1">Material Grade</label>
+          <select id="manualMaterial" class="dense-input w-full">
+            <option value="20MnCr5">20MnCr5</option>
+            <option value="EN8">EN8</option>
+            <option value="40Cr4 forging">40Cr4 forging</option>
+          </select>
+        </div>
+        <div>
+          <label for="manualGrossWt" class="block text-xs font-medium text-slate-700 mb-1">Gross Wt (kg)</label>
+          <input type="number" id="manualGrossWt" value="1.15" step="0.05" class="dense-input w-full mono text-right" />
+        </div>
+        <div>
+          <label for="manualAnnualVol" class="block text-xs font-medium text-slate-700 mb-1">Annual Volume</label>
+          <input type="number" id="manualAnnualVol" value="48000" step="1000" class="dense-input w-full mono text-right" />
+        </div>
+        <div>
+          <label for="manualCycleTime" class="block text-xs font-medium text-slate-700 mb-1">Cycle Time (min)</label>
+          <input type="number" id="manualCycleTime" value="4.2" step="0.1" class="dense-input w-full mono text-right" />
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-200">
+        <button type="button" onclick="closeNewManualRfqModal()" class="text-xs px-3 py-1.5 rounded border border-slate-300 text-slate-700">Cancel</button>
+        <button type="button" onclick="createManualRfq()" class="text-xs px-3.5 py-1.5 rounded bg-blue-900 text-white font-semibold">Create &amp; Open Costing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL 4: SESSION, DEMO CREDENTIALS & NDA AUDIT LOG MODAL                -->
+  <!-- ======================================================================= -->
+  <div id="authModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white border border-slate-300 rounded shadow-xl max-w-xl w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+        <h3 class="text-sm font-bold text-slate-900">Named-User Access Control, Demo Accounts &amp; NDA Audit Trail</h3>
+        <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+      </div>
+      <div class="text-xs text-slate-600 space-y-2">
+        <p><strong>NDA Compliance:</strong> Customer CAD drawings are watermarked with the active user's identity and timestamp. AI extraction uses an enterprise zero-retention endpoint that never trains on submitted drawings.</p>
+        <div class="border border-slate-200 rounded overflow-hidden">
+          <table class="cost-grid-table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Demo Email</th>
+                <th>Demo Password</th>
+                <th>Permissions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold">Estimator</td>
+                <td class="mono">rajesh.kulkarni@companya-pune.in</td>
+                <td class="mono">ChakanEst#2026</td>
+                <td>RFQ intake, verify AI, edit costing</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">Sales Head</td>
+                <td class="mono">vikram.joshi@companya-pune.in</td>
+                <td class="mono">ChakanSales#2026</td>
+                <td>Approve quotes &gt; ₹25L, mark Won/Lost</td>
+              </tr>
+              <tr>
+                <td class="font-semibold">Plant Head</td>
+                <td class="mono">anand.shinde@companya-pune.in</td>
+                <td class="mono">ChakanPlant#2026</td>
+                <td>Verify cycle times &amp; machine routings</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded border border-slate-200">
+          <div class="font-semibold text-slate-700 mb-1">Recent NDA Drawing &amp; Rate Governance Audit Log</div>
+          <ul id="ndaAuditLogList" class="space-y-1 mono text-[11px] text-slate-600 max-h-28 overflow-y-auto"></ul>
+        </div>
+      </div>
+      <div class="flex justify-end pt-2 border-t border-slate-200">
+        <button type="button" onclick="closeAuthModal()" class="text-xs px-3.5 py-1.5 rounded bg-slate-900 text-white font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastBanner" class="hidden fixed bottom-4 right-4 bg-slate-900 text-white text-xs px-4 py-2.5 rounded shadow-lg border border-slate-700 z-50 flex items-center gap-2 no-print">
+    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <span id="toastMessage">Saved</span>
+  </div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. VERSIONED RATE MASTERS (Effective-dated, immutable historical rates)
+    // =========================================================================
+    const RATE_MASTERS = {
+      "RM-2026-Q4": {
+        id: "RM-2026-Q4",
+        label: "RM-2026-Q4 (Eff: 01 Oct 2026 — Active)",
+        effectiveFrom: "2026-10-01",
+        effectiveTo: "Present",
+        status: "Active",
+        materials: {
+          "EN8": { baseRate: 78.00, scrapRate: 32.00, spec: "BS 970 080M40 Bright Bar" },
+          "40Cr4 forging": { baseRate: 104.00, scrapRate: 36.00, spec: "IS 40Cr4 Closed-Die Forging" },
+          "20MnCr5": { baseRate: 92.00, scrapRate: 34.00, spec: "DIN 17210 Case Hardening Steel" },
+          "SAE8620": { baseRate: 96.00, scrapRate: 35.00, spec: "ASTM A29 Alloy Gear Steel" }
+        },
+        machines: {
+          "CNC-TURN-CELL": { name: "CNC Turning + Centerless Grinding Cell", rate: 850 },
+          "FORGE-VMC-HEAVY": { name: "1600T Forging Press + 4-Axis VMC Cell", rate: 1450 },
+          "GEAR-TURN-HOB": { name: "CNC Turn-Mill + Gear Blank Finishing Cell", rate: 950 },
+          "SPLINE-ROLL": { name: "Cold Spline Rolling & MPI Station", rate: 780 }
+        }
+      },
+      "RM-2026-Q3": {
+        id: "RM-2026-Q3",
+        label: "RM-2026-Q3 (Eff: 01 Jul 2026 — Historical)",
+        effectiveFrom: "2026-07-01",
+        effectiveTo: "2026-09-30",
+        status: "Superseded",
+        materials: {
+          "EN8": { baseRate: 74.50, scrapRate: 30.00, spec: "BS 970 080M40 Bright Bar" },
+          "40Cr4 forging": { baseRate: 98.00, scrapRate: 34.00, spec: "IS 40Cr4 Closed-Die Forging" },
+          "20MnCr5": { baseRate: 88.00, scrapRate: 32.00, spec: "DIN 17210 Case Hardening Steel" },
+          "SAE8620": { baseRate: 91.50, scrapRate: 33.00, spec: "ASTM A29 Alloy Gear Steel" }
+        },
+        machines: {
+          "CNC-TURN-CELL": { name: "CNC Turning + Centerless Grinding Cell", rate: 820 },
+          "FORGE-VMC-HEAVY": { name: "1600T Forging Press + 4-Axis VMC Cell", rate: 1390 },
+          "GEAR-TURN-HOB": { name: "CNC Turn-Mill + Gear Blank Finishing Cell", rate: 910 },
+          "SPLINE-ROLL": { name: "Cold Spline Rolling & MPI Station", rate: 750 }
+        }
+      },
+      "RM-2026-Q1": {
+        id: "RM-2026-Q1",
+        label: "RM-2026-Q1 (Eff: 01 Jan 2026 — Legacy ERP)",
+        effectiveFrom: "2026-01-01",
+        effectiveTo: "2026-06-30",
+        status: "Superseded",
+        materials: {
+          "EN8": { baseRate: 71.00, scrapRate: 28.00, spec: "BS 970 080M40 Bright Bar" },
+          "40Cr4 forging": { baseRate: 94.00, scrapRate: 32.00, spec: "IS 40Cr4 Closed-Die Forging" },
+          "20MnCr5": { baseRate: 84.00, scrapRate: 30.00, spec: "DIN 17210 Case Hardening Steel" },
+          "SAE8620": { baseRate: 88.00, scrapRate: 31.00, spec: "ASTM A29 Alloy Gear Steel" }
+        },
+        machines: {
+          "CNC-TURN-CELL": { name: "CNC Turning + Centerless Grinding Cell", rate: 790 },
+          "FORGE-VMC-HEAVY": { name: "1600T Forging Press + 4-Axis VMC Cell", rate: 1340 },
+          "GEAR-TURN-HOB": { name: "CNC Turn-Mill + Gear Blank Finishing Cell", rate: 880 },
+          "SPLINE-ROLL": { name: "Cold Spline Rolling & MPI Station", rate: 720 }
+        }
+      }
+    };
+
+    // =========================================================================
+    // 2. SEEDED RFQ DATA (Exact Sample Data + Context RFQs)
+    // =========================================================================
+    function createInitialRfqs() {
+      return [
+        {
+          id: "RFQ-2611-014",
+          receivedDate: "2026-11-01",
+          dueDate: "2026-11-05",
+          slaDaysElapsed: 1.5,
+          customer: "Company B (two-wheelers)",
+          customerGstin: "27AABCC1204F1Z2",
+          partName: "Rear wheel spindle",
+          partNumber: "CB-2W-4410-B",
+          drawingRev: "DRW-CB-4410-RevC",
+          material: "EN8",
+          grossWt: 0.61,
+          netWt: 0.48,
+          annualVolume: 180000,
+          volumes: [90000, 180000, 270000],
+          rateSnapshotId: "RM-2026-Q4",
+          matRateOverride: 78.00,
+          scrapRateOverride: 32.00,
+          operations: [
+            { opNo: 10, name: "Band Sawing & Center Faced (EN8 Bright Bar)", cycleMin: 0.6, hourRate: 850, setupMin: 20 },
+            { opNo: 20, name: "CNC Twin-Spindle Turning & Threading", cycleMin: 1.8, hourRate: 850, setupMin: 45 },
+            { opNo: 30, name: "Cold Spline Rolling & Centerless Grinding", cycleMin: 0.8, hourRate: 850, setupMin: 25 }
+          ],
+          rejectionPct: 1.5,
+          overheadPct: 14.0,
+          packingPerPc: 1.40,
+          freightPerPc: 1.10,
+          marginPct: 12.0,
+          batchesPerYear: 12,
+          owner: "Rajesh Kulkarni",
+          status: "Pending Approval",
+          statusReason: "Awaiting Sales Head sign-off (> ₹25L annual value)",
+          routingVerifiedBy: "Anand Shinde (Plant Head)",
+          approvedBy: null,
+          aiVerified: true,
+          routingSourceRef: "Suggested from QUOTE-2508-112 (Rear Axle Spindle EN8, 96% match)"
+        },
+        {
+          id: "RFQ-2611-019",
+          receivedDate: "2026-10-31",
+          dueDate: "2026-11-04",
+          slaDaysElapsed: 2.2,
+          customer: "Company C (tractors)",
+          customerGstin: "27AAACC4910D1Z9",
+          partName: "Hydraulic lift arm",
+          partNumber: "CC-TR-8821-F",
+          drawingRev: "DRW-CC-8821-RevA",
+          material: "40Cr4 forging",
+          grossWt: 4.60,
+          netWt: 3.85,
+          annualVolume: 24000,
+          volumes: [12000, 24000, 36000],
+          rateSnapshotId: "RM-2026-Q4",
+          matRateOverride: 104.00,
+          scrapRateOverride: 36.00,
+          operations: [
+            { opNo: 10, name: "Induction Billet Heating & 1600T Closed-Die Forging", cycleMin: 4.2, hourRate: 1450, setupMin: 90 },
+            { opNo: 20, name: "Quench & Temper Heat Treatment + Shot Blasting", cycleMin: 2.1, hourRate: 1450, setupMin: 30 },
+            { opNo: 30, name: "4-Axis VMC Boss Boring & Internal Spline Broaching", cycleMin: 5.2, hourRate: 1450, setupMin: 60 }
+          ],
+          rejectionPct: 2.0,
+          overheadPct: 15.0,
+          packingPerPc: 8.50,
+          freightPerPc: 6.50,
+          marginPct: 12.5,
+          batchesPerYear: 12,
+          owner: "Rajesh Kulkarni",
+          status: "Pending Approval",
+          statusReason: "Awaiting Sales Head sign-off (> ₹25L annual value)",
+          routingVerifiedBy: "Anand Shinde (Plant Head)",
+          approvedBy: null,
+          aiVerified: true,
+          routingSourceRef: "Suggested from QUOTE-2504-067 (3-Point Hitch Lift Arm 40Cr4, 94% match)"
+        },
+        {
+          id: "RFQ-2611-023",
+          receivedDate: "2026-11-01",
+          dueDate: "2026-11-05",
+          slaDaysElapsed: 1.2,
+          customer: "Company D (drivetrains)",
+          customerGstin: "27AABCD8812K1Z5",
+          partName: "Gear blank",
+          partNumber: "CD-DT-1094-A",
+          drawingRev: "DRW-CD-1094-RevE",
+          material: "20MnCr5",
+          grossWt: 1.48,
+          netWt: 1.18,
+          annualVolume: 60000,
+          volumes: [30000, 60000, 90000],
+          rateSnapshotId: "RM-2026-Q4",
+          matRateOverride: 92.00,
+          scrapRateOverride: 34.00,
+          operations: [
+            { opNo: 10, name: "Precision Upset Forging & Iso-Thermal Annealing", cycleMin: 1.8, hourRate: 950, setupMin: 50 },
+            { opNo: 20, name: "CNC Turn-Mill Setup-1 & Setup-2 (OD/ID/Face)", cycleMin: 3.0, hourRate: 950, setupMin: 70 }
+          ],
+          rejectionPct: 1.5,
+          overheadPct: 14.0,
+          packingPerPc: 2.60,
+          freightPerPc: 1.90,
+          marginPct: 12.0,
+          batchesPerYear: 12,
+          owner: "Priya Deshmukh",
+          status: "Estimating",
+          statusReason: "Estimator verifying final gear blank face runout tolerance",
+          routingVerifiedBy: null,
+          approvedBy: null,
+          aiVerified: true,
+          routingSourceRef: "Suggested from QUOTE-2509-204 (Helical Gear Blank 20MnCr5, 97% match)"
+        },
+        {
+          id: "RFQ-2611-027",
+          receivedDate: "2026-11-01",
+          dueDate: "2026-11-05",
+          slaDaysElapsed: 1.0,
+          customer: "Company E (EV Transmissions)",
+          customerGstin: "27AAECE3311M1Z8",
+          partName: "Motor shaft adapter flange",
+          partNumber: "CE-EV-2201-A",
+          drawingRev: "DRW-CE-2201-RevA",
+          material: "EN8",
+          grossWt: 0.42,
+          netWt: 0.33,
+          annualVolume: 18000,
+          volumes: [9000, 18000, 27000],
+          rateSnapshotId: "RM-2026-Q4",
+          matRateOverride: 78.00,
+          scrapRateOverride: 32.00,
+          operations: [
+            { opNo: 10, name: "CNC Turning & Drilling Cell", cycleMin: 2.4, hourRate: 850, setupMin: 45 }
+          ],
+          rejectionPct: 1.5,
+          overheadPct: 14.0,
+          packingPerPc: 1.20,
+          freightPerPc: 0.90,
+          marginPct: 13.0,
+          batchesPerYear: 12,
+          owner: "Priya Deshmukh",
+          status: "Sent",
+          statusReason: "Annual value < ₹25L — Auto-cleared for Estimator dispatch",
+          routingVerifiedBy: "Anand Shinde (Plant Head)",
+          approvedBy: "Auto-Cleared (< ₹25L Policy)",
+          aiVerified: true,
+          routingSourceRef: "Suggested from QUOTE-2506-088 (Hub Adapter Flange EN8, 91% match)"
+        },
+        {
+          id: "RFQ-2610-089",
+          receivedDate: "2026-09-14",
+          dueDate: "2026-09-18",
+          slaDaysElapsed: 2.9,
+          customer: "Company B (two-wheelers)",
+          customerGstin: "27AABCC1204F1Z2",
+          partName: "Front fork lower bracket",
+          partNumber: "CB-2W-3109-D",
+          drawingRev: "DRW-CB-3109-RevB",
+          material: "40Cr4 forging",
+          grossWt: 1.85,
+          netWt: 1.52,
+          annualVolume: 95000,
+          volumes: [50000, 95000, 140000],
+          rateSnapshotId: "RM-2026-Q3",
+          matRateOverride: 98.00,
+          scrapRateOverride: 34.00,
+          operations: [
+            { opNo: 10, name: "Closed-Die Forging + VMC Machining", cycleMin: 5.4, hourRate: 1390, setupMin: 120 }
+          ],
+          rejectionPct: 1.5,
+          overheadPct: 14.0,
+          packingPerPc: 3.10,
+          freightPerPc: 2.20,
+          marginPct: 12.5,
+          batchesPerYear: 12,
+          owner: "Rajesh Kulkarni",
+          status: "Won",
+          statusReason: "PO #CB-2026-9921 received; delivered in 2.9 days (locked to Q3 rates)",
+          routingVerifiedBy: "Anand Shinde (Plant Head)",
+          approvedBy: "Vikram Joshi (Sales Head)",
+          aiVerified: true,
+          routingSourceRef: "Historical Quote Locked to RM-2026-Q3"
+        },
+        {
+          id: "RFQ-2610-074",
+          receivedDate: "2026-09-02",
+          dueDate: "2026-09-06",
+          slaDaysElapsed: 8.8,
+          customer: "Company C (tractors)",
+          customerGstin: "27AAACC4910D1Z9",
+          partName: "PTO output stub shaft",
+          partNumber: "CC-TR-5102-C",
+          drawingRev: "DRW-CC-5102-RevD",
+          material: "20MnCr5",
+          grossWt: 2.10,
+          netWt: 1.68,
+          annualVolume: 15000,
+          volumes: [7500, 15000, 22500],
+          rateSnapshotId: "RM-2026-Q3",
+          matRateOverride: 88.00,
+          scrapRateOverride: 32.00,
+          operations: [
+            { opNo: 10, name: "CNC Turning + Spline Hobbing", cycleMin: 6.5, hourRate: 910, setupMin: 90 }
+          ],
+          rejectionPct: 1.5,
+          overheadPct: 14.0,
+          packingPerPc: 3.50,
+          freightPerPc: 2.50,
+          marginPct: 12.0,
+          batchesPerYear: 12,
+          owner: "Amitabh Borgaonkar",
+          status: "Lost",
+          statusReason: "Late reply (Submitted Day 9 under old Excel workflow vs 4-day customer SLA)",
+          routingVerifiedBy: "Anand Shinde (Plant Head)",
+          approvedBy: "Vikram Joshi (Sales Head)",
+          aiVerified: true,
+          routingSourceRef: "Legacy Excel Cost Sheet Import"
+        }
+      ];
+    }
+
+    // =========================================================================
+    // 3. AI INTAKE SCENARIOS (Including Low-Confidence / Conflict Case)
+    // =========================================================================
+    const AI_INTAKE_SCENARIOS = {
+      "RFQ-2611-014": {
+        rfqId: "RFQ-2611-014",
+        emailSource: "MSG-2611-014.eml | From: sourcing@companyb-2w.in | Subject: RFQ-2611-014 Rear Wheel Spindle (180k/yr)",
+        rawEmail: "From: R. Deshmukh <sourcing@companyb-2w.in>\nTo: rfq@companya-pune.in\nDate: 01 Nov 2026 09:14 IST\nSubject: Urgent RFQ-2611-014: Rear wheel spindle (CB-2W-4410-B)\n\nDear Team Company A,\nPlease submit your firm quotation with multi-volume piece cost breakup within 4 working days (by 05 Nov 2026).\n- Part Name: Rear wheel spindle (Drawing CB-2W-4410-RevC attached under Mutual NDA)\n- Material: EN8 bright bar (BS 970 080M40)\n- Gross Bar Weight: 0.61 kg | Finished Net Weight: 0.48 kg\n- Annual Volume: 180,000 pcs/yr (Quote also at 90,000 and 270,000 pcs/yr)\n- Delivery: FOR Company B Chakan Assembly Plant, Packing in VCI polybags.",
+        drawingFile: "DRW-CB-4410-REV-C.pdf (Page 1 Title Block)",
+        drawingMeta: [
+          ["PART NAME", "REAR WHEEL SPINDLE"],
+          ["DRAWING NO", "CB-2W-4410-REV-C"],
+          ["MATERIAL SPEC", "EN8 (BS 970 080M40)"],
+          ["GROSS / NET WT", "0.61 kg / 0.48 kg"],
+          ["SURFACE HARDNESS", "220-260 HB (Rolled Thread)"],
+          ["CRITICAL TOLERANCE", "OD Ø19.985 ±0.008 mm (Grind)"]
+        ],
+        fields: [
+          { key: "customer", label: "Customer Name", value: "Company B (two-wheelers)", source: "Email Header & ERP Match", confidence: 99, accepted: true },
+          { key: "partName", label: "Part Description", value: "Rear wheel spindle", source: "Excel Row 1 + Drawing Title Block", confidence: 99, accepted: true },
+          { key: "material", label: "Material Grade", value: "EN8", source: "Drawing Title Block (Box 4)", confidence: 97, accepted: true },
+          { key: "grossWt", label: "Gross Weight (kg)", value: "0.61", source: "Excel Part List Col E (0.61 kg)", confidence: 96, accepted: true },
+          { key: "netWt", label: "Finished Net Weight (kg)", value: "0.48", source: "Drawing Title Block (0.48 kg)", confidence: 94, accepted: true },
+          { key: "annualVolume", label: "Base Annual Volume (pcs/yr)", value: "180000", source: "Email Body L9 + Excel Col F", confidence: 99, accepted: true },
+          { key: "cycleTime", label: "Target Composite Cycle Time (min)", value: "3.2", source: "AI Routing Match (QUOTE-2508-112)", confidence: 92, accepted: true },
+          { key: "hourRate", label: "Workcenter Hour Rate (₹/hr)", value: "850", source: "Rate Master RM-2026-Q4 (CNC-TURN-CELL)", confidence: 100, accepted: true }
+        ],
+        suggestedRouting: {
+          pastQuoteId: "QUOTE-2508-112",
+          pastPartName: "Rear Axle Spindle (Pulsar Platform)",
+          pastCustomer: "Company B (two-wheelers)",
+          pastDate: "14 Aug 2025",
+          similarityPct: 96,
+          summary: "Identical EN8 bright bar diameter (Ø24mm), twin-spindle CNC turning + spline rolling + centerless grinding sequence.",
+          ops: [
+            { opNo: 10, name: "Band Sawing & Center Faced (EN8 Bright Bar)", cycleMin: 0.6, hourRate: 850, setupMin: 20 },
+            { opNo: 20, name: "CNC Twin-Spindle Turning & Threading", cycleMin: 1.8, hourRate: 850, setupMin: 45 },
+            { opNo: 30, name: "Cold Spline Rolling & Centerless Grinding", cycleMin: 0.8, hourRate: 850, setupMin: 25 }
+          ]
+        }
+      },
+      "RFQ-2611-019": {
+        rfqId: "RFQ-2611-019",
+        emailSource: "MSG-2611-019.eml | From: buying.tractor@companyc.co.in | Subject: RFQ-2611-019 Hydraulic Lift Arm Forging",
+        rawEmail: "From: M. Phadke <buying.tractor@companyc.co.in>\nTo: rfq@companya-pune.in\nDate: 31 Oct 2026 16:40 IST\nSubject: RFQ-2611-019: Hydraulic lift arm (40Cr4 closed-die forging)\n\nTeam,\nPlease share your best open-book quote for our 55HP Tractor Hydraulic Lift Arm.\n- Part: Hydraulic lift arm (CC-TR-8821-F)\n- Material: 40Cr4 forging (Quenched & Tempered)\n- Gross Forging Wt: 4.60 kg (Net Machined Wt: 3.85 kg)\n- Annual Volume: 24,000 pcs/yr\n- Expected Cycle Time Benchmark: ~11.5 mins across forging + VMC machining.",
+        drawingFile: "DRW-CC-8821-REV-A.pdf (Title Block OCR)",
+        drawingMeta: [
+          ["PART NAME", "HYDRAULIC LIFT ARM"],
+          ["DRAWING NO", "CC-TR-8821-REV-A"],
+          ["MATERIAL SPEC", "IS 40Cr4 CLOSED-DIE FORGING"],
+          ["GROSS / NET WT", "4.60 kg / 3.85 kg"],
+          ["HEAT TREATMENT", "Q&T 269-321 BHN, 100% MPI"],
+          ["INTERNAL SPLINE", "DIN 5480 Involute Broached"]
+        ],
+        fields: [
+          { key: "customer", label: "Customer Name", value: "Company C (tractors)", source: "Email Domain + Master Lookup", confidence: 99, accepted: true },
+          { key: "partName", label: "Part Description", value: "Hydraulic lift arm", source: "Excel Part List + Drawing", confidence: 99, accepted: true },
+          { key: "material", label: "Material Grade", value: "40Cr4 forging", source: "Drawing Title Block", confidence: 98, accepted: true },
+          { key: "grossWt", label: "Gross Weight (kg)", value: "4.60", source: "Excel List (4.60 kg)", confidence: 97, accepted: true },
+          { key: "netWt", label: "Finished Net Weight (kg)", value: "3.85", source: "Drawing Note 4 (3.85 kg)", confidence: 88, accepted: false },
+          { key: "annualVolume", label: "Base Annual Volume (pcs/yr)", value: "24000", source: "Excel Part List Col F", confidence: 99, accepted: true },
+          { key: "cycleTime", label: "Target Composite Cycle Time (min)", value: "11.5", source: "Past Quote QUOTE-2504-067", confidence: 91, accepted: true },
+          { key: "hourRate", label: "Workcenter Hour Rate (₹/hr)", value: "1450", source: "Rate Master RM-2026-Q4 (FORGE-VMC-HEAVY)", confidence: 100, accepted: true }
+        ],
+        suggestedRouting: {
+          pastQuoteId: "QUOTE-2504-067",
+          pastPartName: "3-Point Hitch Rockshaft Arm (40Cr4)",
+          pastCustomer: "Company C (tractors)",
+          pastDate: "22 Apr 2025",
+          similarityPct: 94,
+          summary: "Heavy 1600T closed-die forging in 40Cr4 + Q&T + 4-axis VMC boss boring & spline broaching.",
+          ops: [
+            { opNo: 10, name: "Induction Billet Heating & 1600T Closed-Die Forging", cycleMin: 4.2, hourRate: 1450, setupMin: 90 },
+            { opNo: 20, name: "Quench & Temper Heat Treatment + Shot Blasting", cycleMin: 2.1, hourRate: 1450, setupMin: 30 },
+            { opNo: 30, name: "4-Axis VMC Boss Boring & Internal Spline Broaching", cycleMin: 5.2, hourRate: 1450, setupMin: 60 }
+          ]
+        }
+      },
+      "RFQ-2611-023": {
+        rfqId: "RFQ-2611-023",
+        emailSource: "MSG-2611-023.eml | From: procurement@companyd-drive.com | Subject: RFQ-2611-023 Gear Blank 20MnCr5",
+        rawEmail: "From: S. Nair <procurement@companyd-drive.com>\nTo: rfq@companya-pune.in\nDate: 01 Nov 2026 11:05 IST\nSubject: RFQ-2611-023: Gear blank (20MnCr5) — 60,000 EAU\n\nHi Rajesh,\nAttached is drawing DRW-CD-1094-RevE and Excel schedule for our 6-speed synchro gear blank.\n- Material: 20MnCr5 iso-annealed forging\n- Gross Wt: 1.48 kg | Net Machined Blank Wt: 1.18 kg\n- Annual Volume: 60,000 pcs/yr\nPlease quote within 4 working days.",
+        drawingFile: "DRW-CD-1094-REV-E.pdf (Title Block OCR)",
+        drawingMeta: [
+          ["PART NAME", "GEAR BLANK (SYNCHRO 4TH)"],
+          ["DRAWING NO", "CD-DT-1094-REV-E"],
+          ["MATERIAL SPEC", "20MnCr5 (DIN 17210)"],
+          ["GROSS / NET WT", "1.48 kg / 1.18 kg"],
+          ["HEAT TREATMENT", "ISO-ANNEALED 170-207 HB"],
+          ["FACE RUNOUT", "≤ 0.015 mm TIR"]
+        ],
+        fields: [
+          { key: "customer", label: "Customer Name", value: "Company D (drivetrains)", source: "Email + Customer Master", confidence: 99, accepted: true },
+          { key: "partName", label: "Part Description", value: "Gear blank", source: "Excel Row 1 + Drawing Title", confidence: 99, accepted: true },
+          { key: "material", label: "Material Grade", value: "20MnCr5", source: "Drawing Title Block", confidence: 98, accepted: true },
+          { key: "grossWt", label: "Gross Weight (kg)", value: "1.48", source: "Excel Col E (1.48 kg)", confidence: 98, accepted: true },
+          { key: "netWt", label: "Finished Net Weight (kg)", value: "1.18", source: "Drawing Title Block", confidence: 95, accepted: true },
+          { key: "annualVolume", label: "Base Annual Volume (pcs/yr)", value: "60000", source: "Excel Col F (60,000)", confidence: 99, accepted: true },
+          { key: "cycleTime", label: "Target Composite Cycle Time (min)", value: "4.8", source: "Past Quote QUOTE-2509-204", confidence: 95, accepted: true },
+          { key: "hourRate", label: "Workcenter Hour Rate (₹/hr)", value: "950", source: "Rate Master RM-2026-Q4 (GEAR-TURN-HOB)", confidence: 100, accepted: true }
+        ],
+        suggestedRouting: {
+          pastQuoteId: "QUOTE-2509-204",
+          pastPartName: "Helical Gear Blank Ø96mm (20MnCr5)",
+          pastCustomer: "Company D (drivetrains)",
+          pastDate: "19 Sep 2025",
+          similarityPct: 97,
+          summary: "Upset forging + isothermal annealing + twin-chuck CNC turn-mill Op10/Op20.",
+          ops: [
+            { opNo: 10, name: "Precision Upset Forging & Iso-Thermal Annealing", cycleMin: 1.8, hourRate: 950, setupMin: 50 },
+            { opNo: 20, name: "CNC Turn-Mill Setup-1 & Setup-2 (OD/ID/Face)", cycleMin: 3.0, hourRate: 950, setupMin: 70 }
+          ]
+        }
+      },
+      "RFQ-2611-031-AMBIGUOUS": {
+        rfqId: "RFQ-2611-014",
+        emailSource: "MSG-2611-031.eml | Scanned PDF Drawing with Material Conflict & Smudged Weight",
+        rawEmail: "From: R. Deshmukh <sourcing@companyb-2w.in>\nSubject: Addendum check on Rear Spindle / Stub Axle\n\nNote: Excel sheet mentions EN8 (0.61 kg), whereas old scanned drawing note mentions EN19 / 40Cr4 and blurred weight digit '0.6? kg'. Estimator must verify before costing!",
+        drawingFile: "SCAN-BLURRED-4410.pdf (Low-DPI Scan — OCR Warning)",
+        drawingMeta: [
+          ["PART NAME", "REAR WHEEL SPINDLE"],
+          ["MATERIAL (CONFLICT)", "Excel: EN8 vs Drawing Note: 40Cr4"],
+          ["GROSS WT (BLURRED)", "0.61 kg (OCR Confidence 62%)"],
+          ["ANNUAL VOLUME", "180,000 pcs/yr"],
+          ["AI GUARDRAIL", "BLOCKS QUOTE UNTIL ESTIMATOR ACCEPTS"]
+        ],
+        fields: [
+          { key: "customer", label: "Customer Name", value: "Company B (two-wheelers)", source: "Email Header", confidence: 99, accepted: true },
+          { key: "partName", label: "Part Description", value: "Rear wheel spindle", source: "Excel Row 1", confidence: 96, accepted: true },
+          { key: "material", label: "Material Grade", value: "EN8", source: "CONFLICT: Excel says EN8; Drawing Note 2 says 40Cr4", confidence: 54, accepted: false },
+          { key: "grossWt", label: "Gross Weight (kg)", value: "0.61", source: "LOW OCR: Scanned Title Block '0.6[1/7] kg'", confidence: 62, accepted: false },
+          { key: "netWt", label: "Finished Net Weight (kg)", value: "0.48", source: "Drawing Title Block", confidence: 78, accepted: false },
+          { key: "annualVolume", label: "Base Annual Volume (pcs/yr)", value: "180000", source: "Excel Col F", confidence: 99, accepted: true },
+          { key: "cycleTime", label: "Target Composite Cycle Time (min)", value: "3.2", source: "Past Quote QUOTE-2508-112", confidence: 84, accepted: false },
+          { key: "hourRate", label: "Workcenter Hour Rate (₹/hr)", value: "850", source: "Rate Master RM-2026-Q4", confidence: 100, accepted: true }
+        ],
+        suggestedRouting: {
+          pastQuoteId: "QUOTE-2508-112",
+          pastPartName: "Rear Axle Spindle (EN8)",
+          pastCustomer: "Company B (two-wheelers)",
+          pastDate: "14 Aug 2025",
+          similarityPct: 89,
+          summary: "Warning: If material is overridden to 40Cr4 forging, switch Op 10 to Closed-Die Forging @ ₹1,450/hr.",
+          ops: [
+            { opNo: 10, name: "Band Sawing & Center Faced (EN8 Bright Bar)", cycleMin: 0.6, hourRate: 850, setupMin: 20 },
+            { opNo: 20, name: "CNC Twin-Spindle Turning & Threading", cycleMin: 1.8, hourRate: 850, setupMin: 45 },
+            { opNo: 30, name: "Cold Spline Rolling & Centerless Grinding", cycleMin: 0.8, hourRate: 850, setupMin: 25 }
+          ]
+        }
+      }
+    };
+
+    // =========================================================================
+    // 4. PAST QUOTES REPOSITORY (Seeded representative rows from 1,400-row DB)
+    // =========================================================================
+    const INITIAL_PAST_QUOTES = [
+      { quoteNo: "QUOTE-2508-112", date: "2025-08-14", customer: "Company B (two-wheelers)", part: "Rear Axle Spindle (Pulsar 150)", material: "EN8", grossWt: 0.59, cycleMin: 3.1, hourRate: 820, unitPrice: 106.80, rateMaster: "RM-2025-Q3", outcome: "Won" },
+      { quoteNo: "QUOTE-2504-067", date: "2025-04-22", customer: "Company C (tractors)", part: "3-Point Hitch Rockshaft Lift Arm", material: "40Cr4 forging", grossWt: 4.45, cycleMin: 11.2, hourRate: 1390, unitPrice: 864.50, rateMaster: "RM-2025-Q2", outcome: "Won" },
+      { quoteNo: "QUOTE-2509-204", date: "2025-09-19", customer: "Company D (drivetrains)", part: "Helical Gear Blank Ø96mm", material: "20MnCr5", grossWt: 1.45, cycleMin: 4.7, hourRate: 910, unitPrice: 236.40, rateMaster: "RM-2025-Q3", outcome: "Won" },
+      { quoteNo: "QUOTE-2602-019", date: "2026-02-11", customer: "Company B (two-wheelers)", part: "Swingarm Pivot Bolt Stepped", material: "EN8", grossWt: 0.52, cycleMin: 2.8, hourRate: 790, unitPrice: 92.10, rateMaster: "RM-2026-Q1", outcome: "Won" },
+      { quoteNo: "QUOTE-2603-044", date: "2026-03-08", customer: "Company C (tractors)", part: "Differential Spider Cross Forging", material: "20MnCr5", grossWt: 1.62, cycleMin: 5.1, hourRate: 880, unitPrice: 251.90, rateMaster: "RM-2026-Q1", outcome: "Lost (Late Reply 8d)" },
+      { quoteNo: "QUOTE-2605-103", date: "2026-05-27", customer: "Company D (drivetrains)", part: "Countershaft 4th Gear Blank", material: "SAE8620", grossWt: 1.38, cycleMin: 4.5, hourRate: 880, unitPrice: 229.75, rateMaster: "RM-2026-Q1", outcome: "Won" },
+      { quoteNo: "QUOTE-2607-155", date: "2026-07-19", customer: "Company C (tractors)", part: "Heavy Steering Knuckle Arm", material: "40Cr4 forging", grossWt: 4.85, cycleMin: 12.0, hourRate: 1390, unitPrice: 912.30, rateMaster: "RM-2026-Q3", outcome: "Won" },
+      { quoteNo: "QUOTE-2608-190", date: "2026-08-24", customer: "Company E (EV Transmissions)", part: "Rotor Shaft Input Hub", material: "20MnCr5", grossWt: 0.94, cycleMin: 3.9, hourRate: 910, unitPrice: 174.20, rateMaster: "RM-2026-Q3", outcome: "Won" }
+    ];
+
+    // =========================================================================
+    // 5. GLOBAL STATE & DETERMINISTIC COSTING ENGINE
+    // =========================================================================
+    const state = {
+      currentRole: "estimator",
+      currentTab: "register",
+      activeRfqId: "RFQ-2611-014",
+      activeIntakeScenarioKey: "RFQ-2611-014",
+      statusModalRfqId: null,
+      rfqs: createInitialRfqs(),
+      pastQuotes: [...INITIAL_PAST_QUOTES],
+      importedTotalCount: 1400,
+      auditLog: [
+        "2026-11-02 09:12 IST — Rajesh Kulkarni (Estimator) opened DRW-CB-4410-RevC.pdf under NDA watermark.",
+        "2026-11-02 09:15 IST — AI Intake parsed 8 fields from RFQ-2611-014 (Avg confidence 97.0%).",
+        "2026-11-02 09:28 IST — Anand Shinde (Plant Head) verified 3.2 min cycle time on CNC-TURN-CELL.",
+        "2026-11-02 09:31 IST — Rate Snapshot RM-2026-Q4 locked to RFQ-2611-014 (EN8 @ ₹78/kg, ₹850/hr)."
+      ]
+    };
+
+    function formatINR(val, decimals = 2) {
+      const num = Number(val) || 0;
+      return "₹" + num.toLocaleString("en-IN", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatLakhs(val) {
+      const lakhs = (Number(val) || 0) / 100000;
+      return "₹" + lakhs.toFixed(2) + " L";
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById("toastBanner");
+      const text = document.getElementById("toastMessage");
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove("hidden");
+      setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 3200);
+    }
+
+    function getActiveRfq() {
+      return state.rfqs.find(r => r.id === state.activeRfqId) || state.rfqs[0];
+    }
+
+    /**
+     * DETERMINISTIC COSTING FORMULA (Never AI):
+     * Computes exact unit cost breakup for a given RFQ at a specific annual volume V.
+     */
+    function calculatePartCostAtVolume(rfq, annualVol) {
+      const grossWt = Math.max(0.001, Number(rfq.grossWt) || 0);
+      const netWt = Math.min(grossWt, Math.max(0.001, Number(rfq.netWt) || grossWt * 0.8));
+      const matRate = Math.max(0, Number(rfq.matRateOverride) || 0);
+      const scrapRate = Math.max(0, Number(rfq.scrapRateOverride) || 0);
+
+      // 1. Material & Scrap Credit (90% swarf recovery factor)
+      const grossMaterialCost = grossWt * matRate;
+      const scrapWeight = Math.max(0, grossWt - netWt);
+      const scrapRecoveryCredit = scrapWeight * 0.90 * scrapRate;
+      const netMaterialCost = Math.max(0, grossMaterialCost - scrapRecoveryCredit);
+
+      // 2. Routing Conversion & Setup Amortization across batches
+      let totalCycleMin = 0;
+      let totalRunCost = 0;
+      let totalSetupMin = 0;
+      let totalSetupCostPerBatch = 0;
+
+      (rfq.operations || []).forEach(op => {
+        const cMin = Math.max(0, Number(op.cycleMin) || 0);
+        const hRate = Math.max(0, Number(op.hourRate) || 0);
+        const sMin = Math.max(0, Number(op.setupMin) || 0);
+        totalCycleMin += cMin;
+        totalRunCost += (cMin / 60.0) * hRate;
+        totalSetupMin += sMin;
+        totalSetupCostPerBatch += (sMin / 60.0) * hRate;
+      });
+
+      const batchesPerYr = Math.max(1, Number(rfq.batchesPerYear) || 12);
+      const batchSize = Math.max(1, annualVol / batchesPerYr);
+      const setupCostPerPc = totalSetupCostPerBatch / batchSize;
+
+      const totalConversionCost = totalRunCost + setupCostPerPc;
+      const weightedHourRate = totalCycleMin > 0 ? (totalRunCost / (totalCycleMin / 60.0)) : 0;
+
+      // 3. Prime Cost, Process Rejection & Factory Overhead
+      const primeCost = netMaterialCost + totalConversionCost;
+      const rejectionCost = primeCost * ((Number(rfq.rejectionPct) || 0) / 100.0);
+      // Volume efficiency factor on Factory Overhead: Tier 1 (+6% overhead pressure), Tier 2 (1.0x), Tier 3 (-4% overhead absorption gain)
+      const baseVol = Math.max(1, Number(rfq.annualVolume) || annualVol);
+      const volRatio = annualVol / baseVol;
+      const ohMultiplier = volRatio < 0.8 ? 1.06 : (volRatio > 1.2 ? 0.96 : 1.0);
+      const overheadCost = totalConversionCost * ((Number(rfq.overheadPct) || 0) / 100.0) * ohMultiplier;
+
+      // 4. Packing & Freight
+      const packingCost = Math.max(0, Number(rfq.packingPerPc) || 0);
+      const freightCost = Math.max(0, Number(rfq.freightPerPc) || 0);
+
+      // 5. Total Cost, Margin, Ex-Works Price & Separate 18% GST
+      const totalManufacturingCost = primeCost + rejectionCost + overheadCost + packingCost + freightCost;
+      const marginAmount = totalManufacturingCost * ((Number(rfq.marginPct) || 0) / 100.0);
+      const unitPriceExGst = totalManufacturingCost + marginAmount;
+      const gstAmount = unitPriceExGst * 0.18;
+      const unitPriceInclGst = unitPriceExGst + gstAmount;
+      const annualTotalExGst = unitPriceExGst * annualVol;
+
+      return {
+        annualVol,
+        batchSize: Math.round(batchSize),
+        grossWt,
+        netWt,
+        scrapWeight,
+        grossMaterialCost,
+        scrapRecoveryCredit,
+        netMaterialCost,
+        totalCycleMin,
+        weightedHourRate,
+        totalSetupMin,
+        totalRunCost,
+        setupCostPerPc,
+        totalConversionCost,
+        primeCost,
+        rejectionCost,
+        overheadCost,
+        packingCost,
+        freightCost,
+        totalManufacturingCost,
+        marginAmount,
+        unitPriceExGst,
+        gstAmount,
+        unitPriceInclGst,
+        annualTotalExGst,
+        requiresSalesHeadApproval: annualTotalExGst > 2500000
+      };
+    }
+
+    // =========================================================================
+    // 6. NAVIGATION & ROLE SWITCHING
+    // =========================================================================
+    function switchTab(tabId) {
+      state.currentTab = tabId;
+      const tabs = ["register", "intake", "costing", "rates", "approvals", "quote", "history"];
+      tabs.forEach(t => {
+        const viewEl = document.getElementById("view-" + t);
+        const btnEl = document.getElementById("tabBtn-" + t);
+        if (viewEl) {
+          if (t === tabId) viewEl.classList.remove("hidden");
+          else viewEl.classList.add("hidden");
+        }
+        if (btnEl) {
+          if (t === tabId) btnEl.classList.add("active");
+          else btnEl.classList.remove("active");
+        }
+      });
+      refreshAllViews();
+    }
+
+    function switchUserRole(role) {
+      state.currentRole = role;
+      const strip = document.getElementById("rolePermissionText");
+      const roleLabels = {
+        estimator: "<strong>Active Role — Estimator (Rajesh Kulkarni):</strong> Full access to AI RFQ intake verification, costing parameters, and volume simulation. Quotes exceeding ₹25.00 Lakh annual value require Sales Head approval.",
+        sales_head: "<strong>Active Role — Sales Head (Vikram Joshi):</strong> Commercial authority to approve quotes &gt; ₹25.00 Lakh annual value, adjust target margin, and mark quotes Sent / Won / Lost.",
+        plant_head: "<strong>Active Role — Plant Head (Anand Shinde):</strong> Technical authority to verify process routings, cycle times, and machine hour assignments.",
+        md: "<strong>Active Role — Managing Director (S. Deshpande):</strong> Executive oversight of turnaround SLA, contribution margins, and key account sign-offs."
+      };
+      if (strip) strip.innerHTML = roleLabels[role] || roleLabels.estimator;
+
+      const approvalRoleEl = document.getElementById("approvalViewRoleLabel");
+      if (approvalRoleEl) {
+        const names = {
+          estimator: "Estimator (Rajesh Kulkarni)",
+          sales_head: "Sales Head (Vikram Joshi)",
+          plant_head: "Plant Head (Anand Shinde)",
+          md: "Managing Director (S. Deshpande)"
+        };
+        approvalRoleEl.textContent = names[role] || role;
+      }
+      state.auditLog.unshift("2026-11-02 — Switched active RBAC session role to: " + role.toUpperCase());
+      refreshAllViews();
+      showToast("Active role switched to " + role.replace("_", " ").toUpperCase());
+    }
+
+    // =========================================================================
+    // 7. VIEW 1: RFQ REGISTER RENDERER
+    // =========================================================================
+    function renderRfqRegister() {
+      const tbody = document.getElementById("rfqRegisterBody");
+      if (!tbody) return;
+      const query = (document.getElementById("registerSearchInput")?.value || "").toLowerCase().trim();
+      const statusFilter = document.getElementById("registerStatusFilter")?.value || "ALL";
+      const ownerFilter = document.getElementById("registerOwnerFilter")?.value || "ALL";
+
+      let activePipelineValue = 0;
+      let activeCount = 0;
+      let pendingApprovals = 0;
+
+      state.rfqs.forEach(r => {
+        const c = calculatePartCostAtVolume(r, r.annualVolume);
+        if (r.status === "Estimating" || r.status === "Pending Approval" || r.status === "Sent") {
+          activeCount++;
+          activePipelineValue += c.annualTotalExGst;
+        }
+        if (r.status === "Pending Approval") pendingApprovals++;
+      });
+
+      document.getElementById("kpiActiveCount").textContent = String(activeCount);
+      document.getElementById("kpiPipelineValue").textContent = formatLakhs(activePipelineValue);
+      document.getElementById("kpiPendingApprovals").textContent = String(pendingApprovals);
+      document.getElementById("navBadgeRegister").textContent = String(state.rfqs.length);
+      document.getElementById("navBadgeApprovals").textContent = String(pendingApprovals);
+
+      const filtered = state.rfqs.filter(r => {
+        const matchQ = !query ||
+          r.id.toLowerCase().includes(query) ||
+          r.customer.toLowerCase().includes(query) ||
+          r.partName.toLowerCase().includes(query) ||
+          r.material.toLowerCase().includes(query);
+        const matchStatus = statusFilter === "ALL" || r.status === statusFilter;
+        const matchOwner = ownerFilter === "ALL" || r.owner === ownerFilter;
+        return matchQ && matchStatus && matchOwner;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-500">No RFQs match the current filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const cost = calculatePartCostAtVolume(r, r.annualVolume);
+        const slaBadge = r.slaDaysElapsed <= 4.0
+          ? `<span class="badge bg-emerald-50 text-emerald-800 border border-emerald-200 mono">${r.slaDaysElapsed.toFixed(1)}d / 4.0d</span>`
+          : `<span class="badge bg-rose-50 text-rose-800 border border-rose-200 mono">${r.slaDaysElapsed.toFixed(1)}d (Late)</span>`;
+
+        const statusStyles = {
+          "Estimating": "bg-blue-50 text-blue-900 border border-blue-200",
+          "Pending Approval": "bg-amber-50 text-amber-900 border border-amber-300",
+          "Sent": "bg-indigo-50 text-indigo-900 border border-indigo-200",
+          "Won": "bg-emerald-50 text-emerald-900 border border-emerald-300",
+          "Lost": "bg-rose-50 text-rose-900 border border-rose-300"
+        };
+        const stClass = statusStyles[r.status] || "bg-slate-100 text-slate-800";
+
+        return `
+          <tr class="hover:bg-slate-50/90 transition">
+            <td class="mono font-semibold text-blue-900">
+              <button type="button" onclick="openRfqInCosting('${r.id}')" class="hover:underline text-left">${r.id}</button>
+            </td>
+            <td>
+              <div class="mono text-xs text-slate-800">Due: ${r.dueDate}</div>
+              <div class="mt-0.5">${slaBadge}</div>
+            </td>
+            <td>
+              <div class="font-medium text-slate-900">${r.customer}</div>
+              <div class="text-[11px] text-slate-500 mono">${r.partNumber}</div>
+            </td>
+            <td>
+              <div class="font-semibold text-slate-900">${r.partName}</div>
+              <div class="text-[11px] text-slate-500 mono">Mat: <strong>${r.material}</strong> | Cycle: ${cost.totalCycleMin.toFixed(1)}m @ ₹${Math.round(cost.weightedHourRate)}/hr</div>
+            </td>
+            <td class="num mono">${r.grossWt.toFixed(2)}</td>
+            <td class="num mono">${r.annualVolume.toLocaleString("en-IN")}</td>
+            <td class="num mono font-semibold text-slate-900">${formatINR(cost.unitPriceExGst)}</td>
+            <td class="num mono">
+              <div class="font-semibold text-slate-900">${formatLakhs(cost.annualTotalExGst)}</div>
+              <div class="text-[10px] ${cost.requiresSalesHeadApproval ? 'text-amber-700 font-semibold' : 'text-slate-500'}">
+                ${cost.requiresSalesHeadApproval ? '&gt; ₹25L Approval' : '&lt; ₹25L Auto'}
+              </div>
+            </td>
+            <td>
+              <span class="mono text-xs bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded">${r.rateSnapshotId}</span>
+            </td>
+            <td class="text-xs text-slate-700">${r.owner}</td>
+            <td>
+              <span class="badge ${stClass}">${r.status}</span>
+              <div class="text-[11px] text-slate-500 mt-0.5 max-w-[190px] truncate" title="${r.statusReason || ''}">${r.statusReason || ''}</div>
+            </td>
+            <td class="num whitespace-nowrap space-x-1">
+              <button type="button" onclick="openRfqInCosting('${r.id}')" class="text-xs bg-blue-900 hover:bg-blue-950 text-white px-2.5 py-1 rounded font-medium">
+                Costing
+              </button>
+              <button type="button" onclick="openStatusModal('${r.id}')" class="text-xs bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-2 py-1 rounded">
+                Status
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function openRfqInCosting(rfqId) {
+      state.activeRfqId = rfqId;
+      switchTab("costing");
+    }
+
+    // =========================================================================
+    // 8. VIEW 2: AI RFQ INTAKE & EXTRACTION VERIFICATION
+    // =========================================================================
+    function loadIntakeScenario(scenarioKey) {
+      state.activeIntakeScenarioKey = scenarioKey;
+      renderIntakeView();
+    }
+
+    function runSimulatedAiExtraction() {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey];
+      if (!scenario) return;
+      showToast("AI Extraction completed for " + scenario.drawingFile + " (Zero-Training NDA Mode)");
+      renderIntakeView();
+    }
+
+    function renderIntakeView() {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey] || AI_INTAKE_SCENARIOS["RFQ-2611-014"];
+      document.getElementById("intakeEmailSourceTag").textContent = scenario.emailSource;
+      document.getElementById("intakeRawEmailText").textContent = scenario.rawEmail;
+      document.getElementById("drawingFileName").textContent = scenario.drawingFile;
+
+      // Render Blueprint SVG Schematic
+      const svgBox = document.getElementById("drawingBlueprintPreview");
+      if (svgBox) {
+        svgBox.innerHTML = `
+          <svg viewBox="0 0 460 115" class="w-full h-28">
+            <rect width="460" height="115" fill="#091326" />
+            <g stroke="#1E3A8A" stroke-width="0.5">
+              <line x1="0" y1="25" x2="460" y2="25" /><line x1="0" y1="55" x2="460" y2="55" /><line x1="0" y1="85" x2="460" y2="85" />
+              <line x1="80" y1="0" x2="80" y2="115" /><line x1="180" y1="0" x2="180" y2="115" /><line x1="280" y1="0" x2="280" y2="115" /><line x1="380" y1="0" x2="380" y2="115" />
+            </g>
+            <!-- Animated Laser OCR Scanline -->
+            <line x1="10" y1="6" x2="450" y2="6" stroke="#22D3EE" stroke-width="1.8" class="laser-line" />
+            <!-- Centerline -->
+            <line x1="25" y1="57" x2="435" y2="57" stroke="#38BDF8" stroke-width="1" stroke-dasharray="8,3,2,3" />
+            <circle cx="120" cy="32" r="3" fill="#34D399" />
+            <circle cx="260" cy="38" r="3" fill="#38BDF8" />
+            <!-- Stepped Shaft / Forged Component Profile -->
+            <rect x="45" y="42" width="75" height="30" fill="none" stroke="#93C5FD" stroke-width="1.8" />
+            <rect x="120" y="32" width="140" height="50" fill="none" stroke="#E0F2FE" stroke-width="2" />
+            <rect x="260" y="38" width="95" height="38" fill="none" stroke="#93C5FD" stroke-width="1.8" />
+            <rect x="355" y="45" width="55" height="24" fill="none" stroke="#93C5FD" stroke-width="1.8" />
+            <!-- Dimension Callouts -->
+            <text x="140" y="22" fill="#7DD3FC" font-family="monospace" font-size="9">MAT: ${scenario.fields.find(f => f.key === 'material')?.value || ''} | WT: ${scenario.fields.find(f => f.key === 'grossWt')?.value || ''} kg</text>
+            <text x="145" y="103" fill="#FDE047" font-family="monospace" font-size="9">OCR TITLE BLOCK VERIFIED — CHAKAN QA</text>
+          </svg>
+        `;
+      }
+
+      const metaGrid = document.getElementById("drawingTitleBlockGrid");
+      if (metaGrid) {
+        metaGrid.innerHTML = scenario.drawingMeta.map(([k, v]) => `
+          <div class="border border-slate-800 p-1.5 rounded bg-slate-900/60">
+            <div class="text-[10px] text-slate-400">${k}</div>
+            <div class="text-xs font-semibold text-white truncate">${v}</div>
+          </div>
+        `).join("");
+      }
+
+      const unacceptedCount = scenario.fields.filter(f => !f.accepted).length;
+      const summaryEl = document.getElementById("intakeVerificationSummary");
+      if (summaryEl) {
+        summaryEl.innerHTML = unacceptedCount === 0
+          ? `<span class="text-emerald-700 font-semibold">✓ All ${scenario.fields.length} extracted fields verified by Estimator. Ready to push to Costing Workbench.</span>`
+          : `<span class="text-amber-700 font-semibold">⚠ ${unacceptedCount} field(s) require Estimator review &amp; acceptance before quote lock.</span>`;
+      }
+      const badgeEl = document.getElementById("navBadgeIntake");
+      if (badgeEl) {
+        badgeEl.textContent = unacceptedCount === 0 ? "Verified" : `${unacceptedCount} Review`;
+      }
+
+      const tbody = document.getElementById("intakeFieldsTableBody");
+      if (tbody) {
+        tbody.innerHTML = scenario.fields.map((f, idx) => {
+          const confColor = f.confidence >= 90
+            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+            : (f.confidence >= 75 ? "bg-amber-50 text-amber-800 border-amber-300" : "bg-rose-50 text-rose-800 border-rose-300");
+
+          return `
+            <tr class="${!f.accepted ? 'bg-amber-50/40' : ''}">
+              <td class="font-medium text-slate-800">${f.label}</td>
+              <td>
+                <input type="text" value="${f.value}" onchange="editIntakeFieldValue(${idx}, this.value)" class="dense-input mono text-xs w-44" />
+              </td>
+              <td class="text-xs text-slate-600">
+                <span class="mono text-[11px] bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">${f.source}</span>
+              </td>
+              <td>
+                <span class="badge border ${confColor} mono">${f.confidence}%</span>
+              </td>
+              <td>
+                ${f.accepted
+                  ? `<span class="badge bg-emerald-100 text-emerald-900">✓ Accepted</span>
+                     <button type="button" onclick="toggleIntakeFieldAcceptance(${idx})" class="text-[11px] text-slate-500 hover:underline ml-1">Uncheck</button>`
+                  : `<button type="button" onclick="toggleIntakeFieldAcceptance(${idx})" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold px-2.5 py-1 rounded">Accept Value</button>`
+                }
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      // Routing Suggestion Box
+      const sug = scenario.suggestedRouting;
+      const matchBadge = document.getElementById("routingMatchBadge");
+      if (matchBadge) matchBadge.textContent = `${sug.similarityPct}% Similarity Match`;
+
+      const sugBox = document.getElementById("intakeRoutingSuggestionsBox");
+      if (sugBox) {
+        sugBox.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded border border-slate-200">
+            <div>
+              <div class="text-xs font-semibold text-slate-900">
+                Source Historical Part: <span class="mono text-blue-900">${sug.pastQuoteId}</span> — ${sug.pastPartName}
+              </div>
+              <div class="text-[11px] text-slate-600 mt-0.5">${sug.summary} (Quoted to ${sug.pastCustomer} on ${sug.pastDate})</div>
+            </div>
+            <button type="button" onclick="applySuggestedRoutingToRfq()" class="bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-3 py-1.5 rounded">
+              Apply Suggested Routing to ${scenario.rfqId}
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="cost-grid-table">
+              <thead>
+                <tr>
+                  <th>Op #</th>
+                  <th>Suggested Operation Step</th>
+                  <th class="num">Cycle Time (min)</th>
+                  <th class="num">Master Hour Rate (₹/hr)</th>
+                  <th class="num">Setup (min)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sug.ops.map(op => `
+                  <tr>
+                    <td class="mono">${op.opNo}</td>
+                    <td>${op.name}</td>
+                    <td class="num mono">${op.cycleMin.toFixed(1)}</td>
+                    <td class="num mono">₹${op.hourRate}</td>
+                    <td class="num mono">${op.setupMin}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+
+    function editIntakeFieldValue(idx, newVal) {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey];
+      if (!scenario || !scenario.fields[idx]) return;
+      scenario.fields[idx].value = newVal;
+      scenario.fields[idx].accepted = true;
+      scenario.fields[idx].source = "Estimator Manual Override (R. Kulkarni)";
+      scenario.fields[idx].confidence = 100;
+      renderIntakeView();
+      showToast("Field overridden and marked Estimator-Accepted");
+    }
+
+    function toggleIntakeFieldAcceptance(idx) {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey];
+      if (!scenario || !scenario.fields[idx]) return;
+      scenario.fields[idx].accepted = !scenario.fields[idx].accepted;
+      renderIntakeView();
+    }
+
+    function acceptAllHighConfidenceFields() {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey];
+      if (!scenario) return;
+      let count = 0;
+      scenario.fields.forEach(f => {
+        if (f.confidence >= 90 && !f.accepted) {
+          f.accepted = true;
+          count++;
+        }
+      });
+      renderIntakeView();
+      showToast(`Accepted ${count} high-confidence fields. Low-confidence fields remain flagged for manual review.`);
+    }
+
+    function applySuggestedRoutingToRfq() {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey];
+      if (!scenario) return;
+      const targetRfq = state.rfqs.find(r => r.id === scenario.rfqId);
+      if (!targetRfq) return;
+      targetRfq.operations = scenario.suggestedRouting.ops.map(op => ({ ...op }));
+      targetRfq.routingSourceRef = `Suggested from ${scenario.suggestedRouting.pastQuoteId} (${scenario.suggestedRouting.pastPartName}, ${scenario.suggestedRouting.similarityPct}% match)`;
+      state.activeRfqId = targetRfq.id;
+      showToast(`Applied routing from ${scenario.suggestedRouting.pastQuoteId} to ${targetRfq.id}`);
+    }
+
+    function applyIntakeToWorkbench() {
+      const scenario = AI_INTAKE_SCENARIOS[state.activeIntakeScenarioKey];
+      if (!scenario) return;
+      const targetRfq = state.rfqs.find(r => r.id === scenario.rfqId);
+      if (!targetRfq) return;
+
+      const fieldMap = {};
+      let allAccepted = true;
+      scenario.fields.forEach(f => {
+        fieldMap[f.key] = f.value;
+        if (!f.accepted) allAccepted = false;
+      });
+
+      if (fieldMap.customer) targetRfq.customer = fieldMap.customer;
+      if (fieldMap.partName) targetRfq.partName = fieldMap.partName;
+      if (fieldMap.material && RATE_MASTERS[targetRfq.rateSnapshotId].materials[fieldMap.material]) {
+        targetRfq.material = fieldMap.material;
+        const mInfo = RATE_MASTERS[targetRfq.rateSnapshotId].materials[fieldMap.material];
+        targetRfq.matRateOverride = mInfo.baseRate;
+        targetRfq.scrapRateOverride = mInfo.scrapRate;
+      }
+      if (fieldMap.grossWt) targetRfq.grossWt = parseFloat(fieldMap.grossWt) || targetRfq.grossWt;
+      if (fieldMap.netWt) targetRfq.netWt = parseFloat(fieldMap.netWt) || targetRfq.netWt;
+      if (fieldMap.annualVolume) {
+        const v = parseInt(fieldMap.annualVolume, 10) || targetRfq.annualVolume;
+        targetRfq.annualVolume = v;
+        targetRfq.volumes = [Math.round(v * 0.5), v, Math.round(v * 1.5)];
+      }
+      targetRfq.aiVerified = allAccepted;
+      state.activeRfqId = targetRfq.id;
+      switchTab("costing");
+      showToast(allAccepted
+        ? `Verified intake data pushed to Costing Workbench (${targetRfq.id})`
+        : `Pushed to Workbench with unverified AI warnings — review before approval!`);
+    }
+
+    // =========================================================================
+    // 9. VIEW 3: PART COSTING WORKBENCH
+    // =========================================================================
+    function populateRfqSelectors() {
+      const selectors = ["workbenchRfqSelector", "quoteRfqSelector"];
+      selectors.forEach(selId => {
+        const el = document.getElementById(selId);
+        if (!el) return;
+        el.innerHTML = state.rfqs.map(r => `
+          <option value="${r.id}" ${r.id === state.activeRfqId ? "selected" : ""}>
+            ${r.id} — ${r.customer}: ${r.partName} (${r.material})
+          </option>
+        `).join("");
+      });
+      const pill = document.getElementById("activeRfqPill");
+      if (pill) pill.textContent = state.activeRfqId;
+    }
+
+    function selectRfqForCosting(rfqId) {
+      state.activeRfqId = rfqId;
+      refreshAllViews();
+    }
+
+    function changeRfqRateSnapshot(snapshotId) {
+      const rfq = getActiveRfq();
+      if (!rfq || !RATE_MASTERS[snapshotId]) return;
+      rfq.rateSnapshotId = snapshotId;
+      const matObj = RATE_MASTERS[snapshotId].materials[rfq.material];
+      if (matObj) {
+        rfq.matRateOverride = matObj.baseRate;
+        rfq.scrapRateOverride = matObj.scrapRate;
+      }
+      // Adjust operation hour rates proportionally to snapshot
+      const q4Rates = [850, 1450, 950, 780];
+      const snapMachines = Object.values(RATE_MASTERS[snapshotId].machines);
+      rfq.operations.forEach((op, idx) => {
+        if (snapMachines[idx % snapMachines.length]) {
+          // Map standard cell rate if matching
+          if (rfq.material === "EN8") op.hourRate = RATE_MASTERS[snapshotId].machines["CNC-TURN-CELL"].rate;
+          else if (rfq.material === "40Cr4 forging") op.hourRate = RATE_MASTERS[snapshotId].machines["FORGE-VMC-HEAVY"].rate;
+          else if (rfq.material === "20MnCr5") op.hourRate = RATE_MASTERS[snapshotId].machines["GEAR-TURN-HOB"].rate;
+        }
+      });
+      document.getElementById("headerRateVersion").textContent = RATE_MASTERS[snapshotId].label;
+      state.auditLog.unshift(`2026-11-02 — Rate Snapshot for ${rfq.id} set to ${snapshotId}`);
+      renderCostingWorkbench();
+      showToast(`Locked ${rfq.id} to Rate Snapshot ${snapshotId}`);
+    }
+
+    function onMaterialGradeChange(newGrade) {
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+      rfq.material = newGrade;
+      const snap = RATE_MASTERS[rfq.rateSnapshotId] || RATE_MASTERS["RM-2026-Q4"];
+      if (snap.materials[newGrade]) {
+        rfq.matRateOverride = snap.materials[newGrade].baseRate;
+        rfq.scrapRateOverride = snap.materials[newGrade].scrapRate;
+      }
+      renderCostingWorkbench();
+    }
+
+    function updateCostingInputs() {
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+      rfq.grossWt = parseFloat(document.getElementById("costGrossWt").value) || 0.01;
+      rfq.netWt = parseFloat(document.getElementById("costNetWt").value) || 0.01;
+      rfq.matRateOverride = parseFloat(document.getElementById("costMatRate").value) || 0;
+      rfq.scrapRateOverride = parseFloat(document.getElementById("costScrapRate").value) || 0;
+      rfq.rejectionPct = parseFloat(document.getElementById("costRejectionPct").value) || 0;
+      rfq.overheadPct = parseFloat(document.getElementById("costOverheadPct").value) || 0;
+      rfq.packingPerPc = parseFloat(document.getElementById("costPackingPerPc").value) || 0;
+      rfq.freightPerPc = parseFloat(document.getElementById("costFreightPerPc").value) || 0;
+      rfq.marginPct = parseFloat(document.getElementById("costMarginPct").value) || 0;
+      rfq.batchesPerYear = parseInt(document.getElementById("costBatchesPerYear").value, 10) || 12;
+      renderCostingWorkbench(true);
+    }
+
+    function updateVolumeTiers() {
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+      const v1 = parseInt(document.getElementById("volTier1Input").value, 10) || 1000;
+      const v2 = parseInt(document.getElementById("volTier2Input").value, 10) || 1000;
+      const v3 = parseInt(document.getElementById("volTier3Input").value, 10) || 1000;
+      rfq.volumes = [v1, v2, v3];
+      rfq.annualVolume = v2;
+      renderCostingWorkbench(true);
+    }
+
+    function updateRoutingOp(idx, field, val) {
+      const rfq = getActiveRfq();
+      if (!rfq || !rfq.operations[idx]) return;
+      if (field === "name") {
+        rfq.operations[idx].name = val;
+      } else {
+        rfq.operations[idx][field] = parseFloat(val) || 0;
+      }
+      renderCostingWorkbench();
+    }
+
+    function addRoutingOperation() {
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+      const nextOpNo = (rfq.operations.length + 1) * 10;
+      rfq.operations.push({
+        opNo: nextOpNo,
+        name: "Deburring, Washing & 100% Air Gauge Inspection",
+        cycleMin: 0.5,
+        hourRate: 780,
+        setupMin: 15
+      });
+      renderCostingWorkbench();
+      showToast("Added operation step Op " + nextOpNo);
+    }
+
+    function removeRoutingOperation(idx) {
+      const rfq = getActiveRfq();
+      if (!rfq || rfq.operations.length <= 1) {
+        showToast("At least one routing operation is required.");
+        return;
+      }
+      rfq.operations.splice(idx, 1);
+      renderCostingWorkbench();
+    }
+
+    function resetCurrentRfqToSampleBaseline() {
+      const fresh = createInitialRfqs().find(r => r.id === state.activeRfqId);
+      if (!fresh) return;
+      const idx = state.rfqs.findIndex(r => r.id === state.activeRfqId);
+      if (idx !== -1) state.rfqs[idx] = fresh;
+      renderCostingWorkbench();
+      showToast("Reset " + state.activeRfqId + " to exact sample baseline.");
+    }
+
+    function renderCostingWorkbench(skipInputSync = false) {
+      populateRfqSelectors();
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+
+      document.getElementById("workbenchRateMasterSelector").value = rfq.rateSnapshotId;
+      document.getElementById("materialMasterSourceLabel").textContent =
+        `Snapshot: ${rfq.rateSnapshotId} (${RATE_MASTERS[rfq.rateSnapshotId]?.effectiveFrom || ''})`;
+      document.getElementById("routingProvenanceLabel").textContent =
+        rfq.routingSourceRef || "Custom Estimator Routing";
+
+      const aiBadge = document.getElementById("workbenchAiStatusBadge");
+      if (aiBadge) {
+        aiBadge.innerHTML = rfq.aiVerified
+          ? `<span class="badge bg-emerald-50 text-emerald-800 border border-emerald-200">✓ All AI-Extracted Fields Accepted</span>`
+          : `<button type="button" onclick="switchTab('intake')" class="badge bg-rose-50 text-rose-800 border border-rose-300 hover:underline">⚠ Unverified AI Fields — Click to Verify</button>`;
+      }
+
+      if (!skipInputSync) {
+        document.getElementById("costMatGrade").value = rfq.material;
+        document.getElementById("costGrossWt").value = rfq.grossWt;
+        document.getElementById("costNetWt").value = rfq.netWt;
+        document.getElementById("costMatRate").value = rfq.matRateOverride;
+        document.getElementById("costScrapRate").value = rfq.scrapRateOverride;
+        document.getElementById("costRejectionPct").value = rfq.rejectionPct;
+        document.getElementById("costOverheadPct").value = rfq.overheadPct;
+        document.getElementById("costPackingPerPc").value = rfq.packingPerPc;
+        document.getElementById("costFreightPerPc").value = rfq.freightPerPc;
+        document.getElementById("costMarginPct").value = rfq.marginPct;
+        document.getElementById("costBatchesPerYear").value = rfq.batchesPerYear;
+
+        document.getElementById("volTier1Input").value = rfq.volumes[0];
+        document.getElementById("volTier2Input").value = rfq.volumes[1];
+        document.getElementById("volTier3Input").value = rfq.volumes[2];
+      }
+
+      // Calculate across all 3 volumes
+      const c1 = calculatePartCostAtVolume(rfq, rfq.volumes[0]);
+      const c2 = calculatePartCostAtVolume(rfq, rfq.volumes[1]);
+      const c3 = calculatePartCostAtVolume(rfq, rfq.volumes[2]);
+
+      document.getElementById("costNetMaterialDisplay").textContent = formatINR(c2.netMaterialCost);
+      document.getElementById("materialFormulaExplain").textContent =
+        `Gross (${c2.grossWt.toFixed(2)}kg × ₹${rfq.matRateOverride}) = ${formatINR(c2.grossMaterialCost)} − Scrap Credit (${formatINR(c2.scrapRecoveryCredit)})`;
+      document.getElementById("scrapWeightExplain").textContent =
+        `Swarf/Flash: ${c2.scrapWeight.toFixed(2)} kg (90% rec @ ₹${rfq.scrapRateOverride}/kg)`;
+
+      // Render Routing Operations Table
+      const opsBody = document.getElementById("routingOpsTableBody");
+      if (opsBody) {
+        opsBody.innerHTML = rfq.operations.map((op, idx) => {
+          const runCost = (op.cycleMin / 60.0) * op.hourRate;
+          return `
+            <tr>
+              <td class="mono font-semibold">${op.opNo}</td>
+              <td>
+                <input type="text" value="${op.name}" onchange="updateRoutingOp(${idx}, 'name', this.value)" class="dense-input w-full text-xs" />
+              </td>
+              <td class="num">
+                <input type="number" step="0.1" min="0.1" value="${op.cycleMin}" onchange="updateRoutingOp(${idx}, 'cycleMin', this.value)" class="dense-input w-20 mono text-right text-xs" />
+              </td>
+              <td class="num">
+                <input type="number" step="10" min="100" value="${op.hourRate}" onchange="updateRoutingOp(${idx}, 'hourRate', this.value)" class="dense-input w-24 mono text-right text-xs" />
+              </td>
+              <td class="num">
+                <input type="number" step="5" min="0" value="${op.setupMin}" onchange="updateRoutingOp(${idx}, 'setupMin', this.value)" class="dense-input w-16 mono text-right text-xs" />
+              </td>
+              <td class="num mono font-medium">${formatINR(runCost)}</td>
+              <td class="num">
+                <button type="button" onclick="removeRoutingOperation(${idx})" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-1">✕</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      document.getElementById("totalCycleTimeCell").textContent = c2.totalCycleMin.toFixed(2) + " min";
+      document.getElementById("weightedHourRateCell").textContent = "₹" + Math.round(c2.weightedHourRate) + "/hr";
+      document.getElementById("totalSetupTimeCell").textContent = Math.round(c2.totalSetupMin) + " min";
+      document.getElementById("totalRunCostCell").textContent = formatINR(c2.totalRunCost);
+
+      // Update Multi-Volume Headers & Table
+      document.getElementById("thVol1").textContent = `${c1.annualVol.toLocaleString("en-IN")}/yr`;
+      document.getElementById("thVol2").textContent = `${c2.annualVol.toLocaleString("en-IN")}/yr (Base)`;
+      document.getElementById("thVol3").textContent = `${c3.annualVol.toLocaleString("en-IN")}/yr`;
+
+      const mvBody = document.getElementById("multiVolumeCostBody");
+      if (mvBody) {
+        mvBody.innerHTML = `
+          <tr>
+            <td class="text-slate-600">Production Batch Size (12 lots/yr)</td>
+            <td class="num mono text-slate-600">${c1.batchSize.toLocaleString("en-IN")} pcs</td>
+            <td class="num mono font-semibold bg-blue-50/40">${c2.batchSize.toLocaleString("en-IN")} pcs</td>
+            <td class="num mono text-slate-600">${c3.batchSize.toLocaleString("en-IN")} pcs</td>
+          </tr>
+          <tr>
+            <td>1. Gross Raw Material (${rfq.material})</td>
+            <td class="num mono">${formatINR(c1.grossMaterialCost)}</td>
+            <td class="num mono bg-blue-50/40">${formatINR(c2.grossMaterialCost)}</td>
+            <td class="num mono">${formatINR(c3.grossMaterialCost)}</td>
+          </tr>
+          <tr>
+            <td class="text-emerald-800">2. Less: Swarf / Flash Scrap Credit</td>
+            <td class="num mono text-emerald-700">-${formatINR(c1.scrapRecoveryCredit)}</td>
+            <td class="num mono text-emerald-700 bg-blue-50/40">-${formatINR(c2.scrapRecoveryCredit)}</td>
+            <td class="num mono text-emerald-700">-${formatINR(c3.scrapRecoveryCredit)}</td>
+          </tr>
+          <tr class="subtotal-row">
+            <td>Net Raw Material Cost (A)</td>
+            <td class="num mono">${formatINR(c1.netMaterialCost)}</td>
+            <td class="num mono bg-blue-50/80">${formatINR(c2.netMaterialCost)}</td>
+            <td class="num mono">${formatINR(c3.netMaterialCost)}</td>
+          </tr>
+          <tr>
+            <td>3. Machining &amp; Forming Run Cost (${c2.totalCycleMin.toFixed(1)}m)</td>
+            <td class="num mono">${formatINR(c1.totalRunCost)}</td>
+            <td class="num mono bg-blue-50/40">${formatINR(c2.totalRunCost)}</td>
+            <td class="num mono">${formatINR(c3.totalRunCost)}</td>
+          </tr>
+          <tr>
+            <td>4. Batch Setup Amortization (${Math.round(c2.totalSetupMin)}m/lot)</td>
+            <td class="num mono">${formatINR(c1.setupCostPerPc)}</td>
+            <td class="num mono bg-blue-50/40">${formatINR(c2.setupCostPerPc)}</td>
+            <td class="num mono">${formatINR(c3.setupCostPerPc)}</td>
+          </tr>
+          <tr class="subtotal-row">
+            <td>Total Conversion Cost (B)</td>
+            <td class="num mono">${formatINR(c1.totalConversionCost)}</td>
+            <td class="num mono bg-blue-50/80">${formatINR(c2.totalConversionCost)}</td>
+            <td class="num mono">${formatINR(c3.totalConversionCost)}</td>
+          </tr>
+          <tr>
+            <td>5. Process Rejection Allowance (${rfq.rejectionPct}%)</td>
+            <td class="num mono">${formatINR(c1.rejectionCost)}</td>
+            <td class="num mono bg-blue-50/40">${formatINR(c2.rejectionCost)}</td>
+            <td class="num mono">${formatINR(c3.rejectionCost)}</td>
+          </tr>
+          <tr>
+            <td>6. Factory &amp; Admin Overheads (${rfq.overheadPct}% Conv)</td>
+            <td class="num mono">${formatINR(c1.overheadCost)}</td>
+            <td class="num mono bg-blue-50/40">${formatINR(c2.overheadCost)}</td>
+            <td class="num mono">${formatINR(c3.overheadCost)}</td>
+          </tr>
+          <tr>
+            <td>7. Packing (₹${rfq.packingPerPc.toFixed(2)}) + Freight (₹${rfq.freightPerPc.toFixed(2)})</td>
+            <td class="num mono">${formatINR(c1.packingCost + c1.freightCost)}</td>
+            <td class="num mono bg-blue-50/40">${formatINR(c2.packingCost + c2.freightCost)}</td>
+            <td class="num mono">${formatINR(c3.packingCost + c3.freightCost)}</td>
+          </tr>
+          <tr class="subtotal-row">
+            <td>Total Manufacturing Cost</td>
+            <td class="num mono">${formatINR(c1.totalManufacturingCost)}</td>
+            <td class="num mono bg-blue-50/80">${formatINR(c2.totalManufacturingCost)}</td>
+            <td class="num mono">${formatINR(c3.totalManufacturingCost)}</td>
+          </tr>
+          <tr>
+            <td>8. Target Margin (${rfq.marginPct}% on Cost)</td>
+            <td class="num mono text-blue-900 font-medium">${formatINR(c1.marginAmount)}</td>
+            <td class="num mono text-blue-900 font-semibold bg-blue-50/40">${formatINR(c2.marginAmount)}</td>
+            <td class="num mono text-blue-900 font-medium">${formatINR(c3.marginAmount)}</td>
+          </tr>
+          <tr class="total-row">
+            <td>Ex-Works Quoted Price (Excl. GST)</td>
+            <td class="num mono">${formatINR(c1.unitPriceExGst)}</td>
+            <td class="num mono text-amber-300">${formatINR(c2.unitPriceExGst)}</td>
+            <td class="num mono">${formatINR(c3.unitPriceExGst)}</td>
+          </tr>
+          <tr class="gst-row">
+            <td>Add: Separate GST @ 18% (HSN 8708)</td>
+            <td class="num mono">${formatINR(c1.gstAmount)}</td>
+            <td class="num mono">${formatINR(c2.gstAmount)}</td>
+            <td class="num mono">${formatINR(c3.gstAmount)}</td>
+          </tr>
+          <tr class="subtotal-row">
+            <td>Total Landed Price Incl. 18% GST (₹/pc)</td>
+            <td class="num mono">${formatINR(c1.unitPriceInclGst)}</td>
+            <td class="num mono font-bold">${formatINR(c2.unitPriceInclGst)}</td>
+            <td class="num mono">${formatINR(c3.unitPriceInclGst)}</td>
+          </tr>
+          <tr>
+            <td class="font-semibold text-slate-800">Annual Contract Value (Ex-GST)</td>
+            <td class="num mono font-semibold">${formatLakhs(c1.annualTotalExGst)}</td>
+            <td class="num mono font-bold text-blue-900 bg-blue-50">${formatLakhs(c2.annualTotalExGst)}</td>
+            <td class="num mono font-semibold">${formatLakhs(c3.annualTotalExGst)}</td>
+          </tr>
+        `;
+      }
+
+      // Update Live Animated Cost Composition Bar
+      const shareBar = document.getElementById("visualCostShareBar");
+      const shareLegend = document.getElementById("visualCostShareLegend");
+      if (shareBar && c2.unitPriceExGst > 0) {
+        const pMat = Math.max(5, Math.round((c2.netMaterialCost / c2.unitPriceExGst) * 100));
+        const pConv = Math.max(5, Math.round((c2.totalConversionCost / c2.unitPriceExGst) * 100));
+        const pOh = Math.max(3, Math.round(((c2.rejectionCost + c2.overheadCost + c2.packingCost + c2.freightCost) / c2.unitPriceExGst) * 100));
+        const pMar = Math.max(3, 100 - pMat - pConv - pOh);
+        shareBar.innerHTML = `
+          <div class="bg-indigo-600 h-full cost-bar-seg" style="width:${pMat}%" title="Net Material: ${pMat}%"></div>
+          <div class="bg-sky-500 h-full cost-bar-seg" style="width:${pConv}%" title="Conversion: ${pConv}%"></div>
+          <div class="bg-amber-500 h-full cost-bar-seg" style="width:${pOh}%" title="OH, Scrap &amp; Freight: ${pOh}%"></div>
+          <div class="bg-emerald-500 h-full cost-bar-seg" style="width:${pMar}%" title="Margin: ${pMar}%"></div>
+        `;
+        if (shareLegend) {
+          shareLegend.innerHTML = `<span class="text-indigo-700">Mat ${pMat}%</span> · <span class="text-sky-600">Conv ${pConv}%</span> · <span class="text-amber-600">OH ${pOh}%</span> · <span class="text-emerald-600">Margin ${pMar}%</span>`;
+        }
+      }
+
+      // Governance Callout
+      const govBox = document.getElementById("costingGovernanceCallout");
+      if (govBox) {
+        const approvalText = c2.requiresSalesHeadApproval
+          ? `<div class="text-amber-800 font-semibold">⚠ Approval Gate Triggered: Base Annual Quote Value is ${formatLakhs(c2.annualTotalExGst)} (&gt; ₹25.00 Lakh policy threshold). Requires <strong>Sales Head (Vikram Joshi)</strong> sign-off before sending PDF quote.</div>`
+          : `<div class="text-emerald-800 font-semibold">✓ Below ₹25.00 Lakh Threshold (${formatLakhs(c2.annualTotalExGst)}): Estimator can issue quote directly once routing is checked.</div>`;
+
+        govBox.innerHTML = `
+          ${approvalText}
+          <div class="text-slate-600 flex flex-wrap justify-between gap-2 pt-1">
+            <span>Plant Head Routing Sign-Off: <strong>${rfq.routingVerifiedBy || "Pending Anand Shinde"}</strong></span>
+            <span>Sales Head Approval: <strong>${rfq.approvedBy || "Pending Vikram Joshi"}</strong></span>
+          </div>
+        `;
+      }
+    }
+
+    function submitCurrentRfqForApproval() {
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+      if (!rfq.aiVerified) {
+        showToast("Blocked: Please accept all AI-extracted fields in Tab 2 before submitting for approval.");
+        switchTab("intake");
+        return;
+      }
+      rfq.status = "Pending Approval";
+      rfq.statusReason = "Submitted by Estimator for Sales Head & Plant Head sign-off";
+      state.auditLog.unshift(`2026-11-02 — ${rfq.id} submitted to Approval Queue`);
+      switchTab("approvals");
+      showToast(`${rfq.id} submitted to Approval Queue.`);
+    }
+
+    // =========================================================================
+    // 10. VIEW 4: RATE MASTERS RENDERER & REVISION PUBLISHER
+    // =========================================================================
+    function renderRateMastersView() {
+      const matBody = document.getElementById("materialRatesTableBody");
+      const macBody = document.getElementById("machineRatesTableBody");
+      if (!matBody || !macBody) return;
+
+      const matRows = [];
+      const macRows = [];
+
+      Object.values(RATE_MASTERS).forEach(snap => {
+        const stBadge = snap.status === "Active"
+          ? `<span class="badge bg-emerald-50 text-emerald-800 border border-emerald-200">Active</span>`
+          : `<span class="badge bg-slate-100 text-slate-600 border border-slate-200">Historical</span>`;
+
+        Object.entries(snap.materials).forEach(([grade, info]) => {
+          matRows.push(`
+            <tr>
+              <td class="mono font-semibold text-xs">${snap.id}</td>
+              <td>
+                <div class="font-medium text-slate-900">${grade}</div>
+                <div class="text-[11px] text-slate-500">${info.spec}</div>
+              </td>
+              <td class="num mono font-semibold">₹${info.baseRate.toFixed(2)}</td>
+              <td class="num mono text-emerald-700">₹${info.scrapRate.toFixed(2)}</td>
+              <td class="mono text-xs text-slate-600">${snap.effectiveFrom} → ${snap.effectiveTo}</td>
+              <td>${stBadge}</td>
+            </tr>
+          `);
+        });
+
+        Object.entries(snap.machines).forEach(([code, m]) => {
+          macRows.push(`
+            <tr>
+              <td class="mono font-semibold text-xs">${snap.id}</td>
+              <td>
+                <div class="font-medium text-slate-900">${m.name}</div>
+                <div class="text-[11px] text-slate-500 mono">${code}</div>
+              </td>
+              <td class="num mono font-semibold">₹${m.rate}</td>
+              <td class="mono text-xs text-slate-600">${snap.effectiveFrom} → ${snap.effectiveTo}</td>
+              <td>${stBadge}</td>
+            </tr>
+          `);
+        });
+      });
+
+      matBody.innerHTML = matRows.join("");
+      macBody.innerHTML = macRows.join("");
+    }
+
+    function openNewRateRevisionModal() {
+      document.getElementById("rateRevisionModal").classList.remove("hidden");
+    }
+    function closeRateRevisionModal() {
+      document.getElementById("rateRevisionModal").classList.add("hidden");
+    }
+
+    function publishNewRateRevision() {
+      const id = (document.getElementById("newRateSnapshotId").value || "RM-2026-NOV").trim();
+      const effDate = document.getElementById("newRateEffectiveDate").value || "2026-11-05";
+      const en8 = parseFloat(document.getElementById("newRateEN8").value) || 81.0;
+      const cr4 = parseFloat(document.getElementById("newRate40Cr4").value) || 108.0;
+      const mn5 = parseFloat(document.getElementById("newRate20MnCr5").value) || 95.0;
+      const cnc = parseInt(document.getElementById("newRateCncHour").value, 10) || 880;
+
+      // Mark previous Active as Superseded
+      Object.values(RATE_MASTERS).forEach(s => {
+        if (s.status === "Active") {
+          s.status = "Superseded";
+          s.effectiveTo = effDate;
+        }
+      });
+
+      RATE_MASTERS[id] = {
+        id,
+        label: `${id} (Eff: ${effDate} — Active)`,
+        effectiveFrom: effDate,
+        effectiveTo: "Present",
+        status: "Active",
+        materials: {
+          "EN8": { baseRate: en8, scrapRate: 33.00, spec: "BS 970 080M40 Bright Bar" },
+          "40Cr4 forging": { baseRate: cr4, scrapRate: 37.00, spec: "IS 40Cr4 Closed-Die Forging" },
+          "20MnCr5": { baseRate: mn5, scrapRate: 35.00, spec: "DIN 17210 Case Hardening Steel" },
+          "SAE8620": { baseRate: 99.00, scrapRate: 36.00, spec: "ASTM A29 Alloy Gear Steel" }
+        },
+        machines: {
+          "CNC-TURN-CELL": { name: "CNC Turning + Centerless Grinding Cell", rate: cnc },
+          "FORGE-VMC-HEAVY": { name: "1600T Forging Press + 4-Axis VMC Cell", rate: 1490 },
+          "GEAR-TURN-HOB": { name: "CNC Turn-Mill + Gear Blank Finishing Cell", rate: 980 },
+          "SPLINE-ROLL": { name: "Cold Spline Rolling & MPI Station", rate: 800 }
+        }
+      };
+
+      // Add option to workbench selector
+      const sel = document.getElementById("workbenchRateMasterSelector");
+      if (sel && !Array.from(sel.options).some(o => o.value === id)) {
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = RATE_MASTERS[id].label;
+        sel.prepend(opt);
+      }
+
+      closeRateRevisionModal();
+      renderRateMastersView();
+      showToast(`Published Rate Master ${id}. Existing quotes remain locked to their prior snapshots.`);
+    }
+
+    // =========================================================================
+    // 11. VIEW 5: APPROVALS & ROUTING SIGN-OFF
+    // =========================================================================
+    function renderApprovalsView() {
+      const container = document.getElementById("approvalCardsContainer");
+      if (!container) return;
+
+      const cards = state.rfqs.map(r => {
+        const cost = calculatePartCostAtVolume(r, r.annualVolume);
+        const needsSalesHead = cost.requiresSalesHeadApproval;
+        return `
+          <div class="border border-slate-200 rounded p-4 bg-slate-50/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="mono font-bold text-sm text-blue-900">${r.id}</span>
+                <span class="font-semibold text-slate-900">${r.customer} — ${r.partName}</span>
+                <span class="badge ${r.status === 'Approved' || r.status === 'Sent' || r.status === 'Won' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${r.status}</span>
+                ${needsSalesHead
+                  ? `<span class="badge bg-rose-50 text-rose-800 border border-rose-200 mono">Annual Value ${formatLakhs(cost.annualTotalExGst)} (&gt; ₹25L Gate)</span>`
+                  : `<span class="badge bg-slate-100 text-slate-700 mono">Annual Value ${formatLakhs(cost.annualTotalExGst)} (&lt; ₹25L)</span>`
+                }
+              </div>
+              <div class="text-xs text-slate-600 mono">
+                Mat: ${r.material} (${r.grossWt} kg) | Vol: ${r.annualVolume.toLocaleString("en-IN")}/yr | Cycle: ${cost.totalCycleMin.toFixed(1)} min @ ₹${Math.round(cost.weightedHourRate)}/hr | Unit Price: <strong>${formatINR(cost.unitPriceExGst)}</strong> + 18% GST | Margin: <strong>${r.marginPct}%</strong> | Snapshot: ${r.rateSnapshotId}
+              </div>
+              <div class="text-xs text-slate-500 flex flex-wrap gap-4 pt-1">
+                <span>Plant Head Routing Check: <strong class="text-slate-800">${r.routingVerifiedBy || "Pending Verification"}</strong></span>
+                <span>Sales Head Commercial Sign-Off: <strong class="text-slate-800">${r.approvedBy || "Pending Sign-Off"}</strong></span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button type="button" onclick="verifyRfqRouting('${r.id}')" class="text-xs bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-medium px-3 py-1.5 rounded">
+                ✓ Plant Head: Verify Routing
+              </button>
+              <button type="button" onclick="approveRfqCommercial('${r.id}')" class="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-3.5 py-1.5 rounded">
+                ✓ Sales Head: Approve &amp; Release Quote
+              </button>
+              <button type="button" onclick="openRfqInCosting('${r.id}')" class="text-xs text-blue-900 hover:underline px-2 py-1">
+                Inspect Costing →
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = cards.join("");
+    }
+
+    function verifyRfqRouting(rfqId) {
+      const rfq = state.rfqs.find(r => r.id === rfqId);
+      if (!rfq) return;
+      rfq.routingVerifiedBy = "Anand Shinde (Plant Head — Verified)";
+      state.auditLog.unshift(`2026-11-02 — Plant Head Anand Shinde verified routing & cycle time for ${rfqId}`);
+      refreshAllViews();
+      showToast(`Routing verified for ${rfqId} by Plant Head.`);
+    }
+
+    function approveRfqCommercial(rfqId) {
+      const rfq = state.rfqs.find(r => r.id === rfqId);
+      if (!rfq) return;
+      if (!rfq.aiVerified) {
+        showToast("Cannot approve: AI intake fields have unverified warnings.");
+        return;
+      }
+      rfq.approvedBy = "Vikram Joshi (Sales Head — Approved)";
+      rfq.status = "Sent";
+      rfq.statusReason = "Approved by Sales Head & released to customer within 4-day SLA";
+      state.auditLog.unshift(`2026-11-02 — Sales Head Vikram Joshi approved ${rfqId} (> ₹25L commercial gate)`);
+      refreshAllViews();
+      showToast(`Quote ${rfqId} approved by Sales Head and marked Sent!`);
+    }
+
+    // =========================================================================
+    // 12. VIEW 6: PDF QUOTE & COST BREAKUP SHEET RENDERER
+    // =========================================================================
+    function renderQuoteSheet() {
+      populateRfqSelectors();
+      const rfq = getActiveRfq();
+      const docEl = document.getElementById("printableQuoteDocument");
+      if (!rfq || !docEl) return;
+
+      const mode = document.getElementById("quoteFormatToggle")?.value || "detailed";
+      const c1 = calculatePartCostAtVolume(rfq, rfq.volumes[0]);
+      const c2 = calculatePartCostAtVolume(rfq, rfq.volumes[1]);
+      const c3 = calculatePartCostAtVolume(rfq, rfq.volumes[2]);
+
+      docEl.innerHTML = `
+        <!-- Letterhead -->
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b-2 border-slate-900 pb-4">
+          <div>
+            <div class="text-lg font-bold tracking-tight text-slate-900">COMPANY A PRECISION AUTO COMPONENTS PVT. LTD.</div>
+            <div class="text-xs text-slate-600">Plot B-42, MIDC Phase II, Chakan Industrial Area, Pune — 410501, Maharashtra, India</div>
+            <div class="text-xs text-slate-500 mono mt-0.5">GSTIN: 27AABCA9012D1Z4 | IATF 16949:2016 Certified | CIN: U29304PN2004PTC119204</div>
+          </div>
+          <div class="text-right mono">
+            <div class="text-sm font-bold text-blue-900">COMMERCIAL QUOTATION</div>
+            <div class="text-xs text-slate-700">Quote Ref: <strong>QT-${rfq.id.replace('RFQ-', '')}-R1</strong></div>
+            <div class="text-xs text-slate-600">Date: 02 Nov 2026</div>
+            <div class="text-[11px] text-slate-500">Rate Snapshot: ${rfq.rateSnapshotId}</div>
+          </div>
+        </div>
+
+        <!-- Customer & Part Metadata Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 p-3.5 rounded border border-slate-200">
+          <div>
+            <div class="text-[10px] font-semibold uppercase text-slate-500">Customer &amp; RFQ Reference</div>
+            <div class="font-bold text-slate-900 text-sm mt-0.5">${rfq.customer}</div>
+            <div class="text-slate-600 mono">Customer GSTIN: ${rfq.customerGstin}</div>
+            <div class="text-slate-600">Customer RFQ No: <strong class="mono">${rfq.id}</strong> (Recd: ${rfq.receivedDate})</div>
+            <div class="text-slate-600">Delivery Terms: FOR Customer Plant (Chakan / Pune Belt)</div>
+          </div>
+          <div>
+            <div class="text-[10px] font-semibold uppercase text-slate-500">Part &amp; Engineering Specification</div>
+            <div class="font-bold text-slate-900 text-sm mt-0.5">${rfq.partName} (${rfq.partNumber})</div>
+            <div class="text-slate-600 mono">Drawing Ref: ${rfq.drawingRev} (Protected under Mutual NDA)</div>
+            <div class="text-slate-600">Material Spec: <strong>${rfq.material}</strong> | Gross Wt: <strong>${rfq.grossWt.toFixed(2)} kg</strong> | Net Wt: <strong>${rfq.netWt.toFixed(2)} kg</strong></div>
+            <div class="text-slate-600">HSN Classification: <span class="mono">8708 99 00</span> (GST @ 18% Extra as applicable)</div>
+          </div>
+        </div>
+
+        <!-- Multi-Volume Summary Table -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">1. Multi-Volume Unit Pricing Schedule (INR ₹ / Piece)</h4>
+          <table class="cost-grid-table border border-slate-200">
+            <thead>
+              <tr>
+                <th>Volume Tier</th>
+                <th class="num">Annual Volume (EAU)</th>
+                <th class="num">Batch Size (12/yr)</th>
+                <th class="num">Ex-Works Price (₹/pc)</th>
+                <th class="num">GST @ 18% (₹/pc)</th>
+                <th class="num">Total Price Incl. GST (₹/pc)</th>
+                <th class="num">Annual Value (Ex-GST)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tier 1 — Pilot / Low Volume (50%)</td>
+                <td class="num mono">${c1.annualVol.toLocaleString("en-IN")}</td>
+                <td class="num mono">${c1.batchSize.toLocaleString("en-IN")}</td>
+                <td class="num mono font-semibold">${formatINR(c1.unitPriceExGst)}</td>
+                <td class="num mono">${formatINR(c1.gstAmount)}</td>
+                <td class="num mono font-bold">${formatINR(c1.unitPriceInclGst)}</td>
+                <td class="num mono">${formatLakhs(c1.annualTotalExGst)}</td>
+              </tr>
+              <tr class="bg-blue-50/60 font-semibold">
+                <td>Tier 2 — Standard RFQ Volume (100%)</td>
+                <td class="num mono">${c2.annualVol.toLocaleString("en-IN")}</td>
+                <td class="num mono">${c2.batchSize.toLocaleString("en-IN")}</td>
+                <td class="num mono font-bold text-blue-900">${formatINR(c2.unitPriceExGst)}</td>
+                <td class="num mono">${formatINR(c2.gstAmount)}</td>
+                <td class="num mono font-bold text-slate-900">${formatINR(c2.unitPriceInclGst)}</td>
+                <td class="num mono font-bold text-blue-900">${formatLakhs(c2.annualTotalExGst)}</td>
+              </tr>
+              <tr>
+                <td>Tier 3 — High Volume Step-Up (150%)</td>
+                <td class="num mono">${c3.annualVol.toLocaleString("en-IN")}</td>
+                <td class="num mono">${c3.batchSize.toLocaleString("en-IN")}</td>
+                <td class="num mono font-semibold">${formatINR(c3.unitPriceExGst)}</td>
+                <td class="num mono">${formatINR(c3.gstAmount)}</td>
+                <td class="num mono font-bold">${formatINR(c3.unitPriceInclGst)}</td>
+                <td class="num mono">${formatLakhs(c3.annualTotalExGst)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        ${mode === "detailed" ? `
+        <!-- Open-Book Cost Breakup Sheet -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">2. Open-Book Piece Cost Breakup at Base Volume (${c2.annualVol.toLocaleString("en-IN")} pcs/yr)</h4>
+          <table class="cost-grid-table border border-slate-200">
+            <thead>
+              <tr>
+                <th>Cost Head</th>
+                <th>Basis / Formula &amp; Rate Master Reference (${rfq.rateSnapshotId})</th>
+                <th class="num">₹ / Piece</th>
+                <th class="num">% of Ex-Works</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Gross Raw Material (${rfq.material})</td>
+                <td class="mono text-xs">${rfq.grossWt.toFixed(2)} kg × ₹${rfq.matRateOverride.toFixed(2)}/kg</td>
+                <td class="num mono">${formatINR(c2.grossMaterialCost)}</td>
+                <td class="num mono">${((c2.grossMaterialCost / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Less: Swarf / Flash Scrap Credit</td>
+                <td class="mono text-xs">${c2.scrapWeight.toFixed(2)} kg × 90% recovery × ₹${rfq.scrapRateOverride.toFixed(2)}/kg</td>
+                <td class="num mono text-emerald-700">-${formatINR(c2.scrapRecoveryCredit)}</td>
+                <td class="num mono">-${((c2.scrapRecoveryCredit / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr class="subtotal-row">
+                <td>Net Raw Material Cost (A)</td>
+                <td class="mono text-xs">Gross Material less Scrap Recovery</td>
+                <td class="num mono">${formatINR(c2.netMaterialCost)}</td>
+                <td class="num mono">${((c2.netMaterialCost / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Process Conversion &amp; Machining Cost (B)</td>
+                <td class="mono text-xs">${c2.totalCycleMin.toFixed(2)} min total cycle @ ₹${Math.round(c2.weightedHourRate)}/hr + ₹${c2.setupCostPerPc.toFixed(2)} setup</td>
+                <td class="num mono">${formatINR(c2.totalConversionCost)}</td>
+                <td class="num mono">${((c2.totalConversionCost / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Process Rejection (${rfq.rejectionPct}%) &amp; Overheads (${rfq.overheadPct}%)</td>
+                <td class="mono text-xs">Rejection: ${formatINR(c2.rejectionCost)} | Factory &amp; Admin OH: ${formatINR(c2.overheadCost)}</td>
+                <td class="num mono">${formatINR(c2.rejectionCost + c2.overheadCost)}</td>
+                <td class="num mono">${(((c2.rejectionCost + c2.overheadCost) / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Packing &amp; Local Chakan Freight</td>
+                <td class="mono text-xs">Packing: ${formatINR(c2.packingCost)} + Freight: ${formatINR(c2.freightCost)}</td>
+                <td class="num mono">${formatINR(c2.packingCost + c2.freightCost)}</td>
+                <td class="num mono">${(((c2.packingCost + c2.freightCost) / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr>
+                <td>Contribution / Profit Margin (${rfq.marginPct}%)</td>
+                <td class="mono text-xs">${rfq.marginPct}% on Total Manufacturing Cost (${formatINR(c2.totalManufacturingCost)})</td>
+                <td class="num mono">${formatINR(c2.marginAmount)}</td>
+                <td class="num mono">${((c2.marginAmount / c2.unitPriceExGst) * 100).toFixed(1)}%</td>
+              </tr>
+              <tr class="total-row">
+                <td>Base Quoted Unit Price (Ex-Works / FOR, Excl. GST)</td>
+                <td class="mono text-xs">Locked to Rate Master ${rfq.rateSnapshotId}</td>
+                <td class="num mono">${formatINR(c2.unitPriceExGst)}</td>
+                <td class="num mono">100.0%</td>
+              </tr>
+              <tr class="gst-row">
+                <td>Separate GST @ 18% (CGST 9% + SGST 9%)</td>
+                <td class="mono text-xs">Shown separately per commercial compliance</td>
+                <td class="num mono">${formatINR(c2.gstAmount)}</td>
+                <td class="num mono">+18.0%</td>
+              </tr>
+              <tr class="subtotal-row">
+                <td>Total Landed Unit Price Including 18% GST</td>
+                <td class="mono text-xs">Final Invoice Unit Rate</td>
+                <td class="num mono font-bold">${formatINR(c2.unitPriceInclGst)}</td>
+                <td class="num mono">118.0%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        ` : ""}
+
+        <!-- Commercial Terms & Sign-Off Block -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-300 text-xs">
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500">Prepared By (Estimation)</div>
+            <div class="font-bold text-slate-900 mt-3">${rfq.owner}</div>
+            <div class="text-slate-500">Senior Cost Estimator</div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500">Technical Routing Verified By</div>
+            <div class="font-bold text-slate-900 mt-3">${rfq.routingVerifiedBy || "Anand Shinde (Plant Head)"}</div>
+            <div class="text-slate-500">Plant Operations — Chakan Unit II</div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-500">Commercial Approval (&gt; ₹25L Policy)</div>
+            <div class="font-bold text-slate-900 mt-3">${rfq.approvedBy || "Vikram Joshi (VP Sales & Commercial)"}</div>
+            <div class="text-slate-500">Authorized Signatory</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function markQuoteSentToCustomer() {
+      const rfq = getActiveRfq();
+      if (!rfq) return;
+      const cost = calculatePartCostAtVolume(rfq, rfq.annualVolume);
+      if (cost.requiresSalesHeadApproval && !rfq.approvedBy) {
+        showToast("Blocked: Annual value exceeds ₹25 Lakh. Sales Head approval is required in Tab 5 first.");
+        return;
+      }
+      rfq.status = "Sent";
+      rfq.statusReason = "Official PDF quote dispatched to customer within 4-day SLA";
+      refreshAllViews();
+      showToast(`Quote for ${rfq.id} marked as Sent to ${rfq.customer}`);
+    }
+
+    // =========================================================================
+    // 13. VIEW 7: PAST QUOTES SEARCH & 1,400-ROW EXCEL IMPORTER
+    // =========================================================================
+    function renderHistoryTable() {
+      const tbody = document.getElementById("historyQuotesTableBody");
+      if (!tbody) return;
+      const q = (document.getElementById("historySearchQuery")?.value || "").toLowerCase().trim();
+      const mat = document.getElementById("historyMaterialFilter")?.value || "ALL";
+      const wt = document.getElementById("historyWeightFilter")?.value || "ALL";
+
+      const filtered = state.pastQuotes.filter(p => {
+        const matchQ = !q || p.part.toLowerCase().includes(q) || p.customer.toLowerCase().includes(q) || p.quoteNo.toLowerCase().includes(q);
+        const matchMat = mat === "ALL" || p.material === mat;
+        let matchWt = true;
+        if (wt === "LIGHT") matchWt = p.grossWt < 1.0;
+        else if (wt === "MEDIUM") matchWt = p.grossWt >= 1.0 && p.grossWt <= 3.0;
+        else if (wt === "HEAVY") matchWt = p.grossWt > 3.0;
+        return matchQ && matchMat && matchWt;
+      });
+
+      tbody.innerHTML = filtered.map((p, idx) => `
+        <tr>
+          <td class="mono font-semibold text-xs text-slate-900">
+            <div>${p.quoteNo}</div>
+            <div class="text-[11px] text-slate-500">${p.date}</div>
+          </td>
+          <td>${p.customer}</td>
+          <td class="font-semibold text-slate-900">${p.part}</td>
+          <td class="mono text-xs">${p.material}</td>
+          <td class="num mono">${p.grossWt.toFixed(2)}</td>
+          <td class="num mono">${p.cycleMin.toFixed(1)}</td>
+          <td class="num mono">₹${p.hourRate}</td>
+          <td class="num mono font-semibold">${formatINR(p.unitPrice)}</td>
+          <td><span class="mono text-xs bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded">${p.rateMaster}</span></td>
+          <td>
+            <span class="badge ${p.outcome.startsWith('Won') ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}">${p.outcome}</span>
+          </td>
+          <td class="num">
+            <button type="button" onclick="clonePastQuoteToActiveRfq(${idx})" class="text-xs bg-blue-900 hover:bg-blue-950 text-white px-2.5 py-1 rounded">
+              Apply to Active RFQ
+            </button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function clonePastQuoteToActiveRfq(idx) {
+      const past = state.pastQuotes[idx];
+      const rfq = getActiveRfq();
+      if (!past || !rfq) return;
+      rfq.operations = [
+        { opNo: 10, name: `Cloned Routing from ${past.quoteNo} (${past.part})`, cycleMin: past.cycleMin, hourRate: past.hourRate, setupMin: 60 }
+      ];
+      rfq.routingSourceRef = `Cloned from historical ${past.quoteNo} (${past.date})`;
+      switchTab("costing");
+      showToast(`Applied cycle time (${past.cycleMin}m) & routing from ${past.quoteNo} to ${rfq.id}`);
+    }
+
+    function runLegacyExcelBatchImport() {
+      const extraRows = [
+        { quoteNo: "QUOTE-2411-881", date: "2024-11-18", customer: "Company B (two-wheelers)", part: "Kick Starter Spindle Shaft", material: "EN8", grossWt: 0.64, cycleMin: 3.4, hourRate: 790, unitPrice: 109.20, rateMaster: "RM-2024-Q4", outcome: "Won" },
+        { quoteNo: "QUOTE-2501-912", date: "2025-01-29", customer: "Company C (tractors)", part: "Lower Link Draft Forging Arm", material: "40Cr4 forging", grossWt: 4.72, cycleMin: 11.8, hourRate: 1340, unitPrice: 879.10, rateMaster: "RM-2025-Q1", outcome: "Won" },
+        { quoteNo: "QUOTE-2503-945", date: "2025-03-12", customer: "Company D (drivetrains)", part: "Reverse Idler Gear Blank", material: "20MnCr5", grossWt: 1.51, cycleMin: 4.9, hourRate: 880, unitPrice: 241.00, rateMaster: "RM-2025-Q1", outcome: "Won" }
+      ];
+      extraRows.forEach(r => {
+        if (!state.pastQuotes.some(existing => existing.quoteNo === r.quoteNo)) {
+          state.pastQuotes.unshift(r);
+        }
+      });
+
+      const banner = document.getElementById("excelImportStatusBanner");
+      const text = document.getElementById("excelImportStatusText");
+      if (banner && text) {
+        text.innerHTML = `<strong>✓ Legacy Excel Batch Import Complete:</strong> Parsed <strong>1,400 rows</strong> from <code class="mono">Chakan_Historical_Quotes_2023_2026.xlsx</code>. 1,394 rows indexed cleanly; 6 rows with legacy material alias <code class="mono">EN-8D</code> normalized to <code class="mono">EN8</code>. Vector/similarity routing index refreshed.`;
+        banner.classList.remove("hidden");
+      }
+      renderHistoryTable();
+      showToast("1,400 legacy Excel quote rows imported and indexed.");
+    }
+
+    function closeImportBanner() {
+      document.getElementById("excelImportStatusBanner").classList.add("hidden");
+    }
+
+    // =========================================================================
+    // 14. MODALS (STATUS, MANUAL RFQ, AUTH/NDA LOG)
+    // =========================================================================
+    function openStatusModal(rfqId) {
+      state.statusModalRfqId = rfqId;
+      const rfq = state.rfqs.find(r => r.id === rfqId);
+      if (!rfq) return;
+      document.getElementById("statusModalTitle").textContent = `Update Status — ${rfq.id} (${rfq.partName})`;
+      document.getElementById("modalStatusSelect").value = rfq.status;
+      document.getElementById("modalLossReason").value = rfq.statusReason || "";
+      document.getElementById("statusModal").classList.remove("hidden");
+    }
+    function closeStatusModal() {
+      document.getElementById("statusModal").classList.add("hidden");
+    }
+    function toggleLossReasonField() {
+      // Keep reason field visible for all statuses so notes can be captured
+    }
+    function applyLossPreset(val) {
+      if (val) document.getElementById("modalLossReason").value = val;
+    }
+    function saveRfqStatusChange() {
+      const rfq = state.rfqs.find(r => r.id === state.statusModalRfqId);
+      if (!rfq) return;
+      const newStatus = document.getElementById("modalStatusSelect").value;
+      const reason = document.getElementById("modalLossReason").value.trim();
+      if (newStatus === "Lost" && !reason) {
+        showToast("Please specify a loss reason when marking an RFQ as Lost.");
+        return;
+      }
+      rfq.status = newStatus;
+      rfq.statusReason = reason || `Status updated to ${newStatus}`;
+      closeStatusModal();
+      refreshAllViews();
+      showToast(`Updated ${rfq.id} status to ${newStatus}`);
+    }
+
+    function openNewManualRfqModal() {
+      document.getElementById("newManualRfqModal").classList.remove("hidden");
+    }
+    function closeNewManualRfqModal() {
+      document.getElementById("newManualRfqModal").classList.add("hidden");
+    }
+    function createManualRfq() {
+      const id = (document.getElementById("manualRfqNo").value || "RFQ-2611-035").trim();
+      const customer = (document.getElementById("manualCustomer").value || "Company B").trim();
+      const partName = (document.getElementById("manualPartName").value || "Machined Shaft").trim();
+      const material = document.getElementById("manualMaterial").value || "20MnCr5";
+      const grossWt = parseFloat(document.getElementById("manualGrossWt").value) || 1.15;
+      const annualVolume = parseInt(document.getElementById("manualAnnualVol").value, 10) || 48000;
+      const cycleTime = parseFloat(document.getElementById("manualCycleTime").value) || 4.2;
+
+      const snap = RATE_MASTERS["RM-2026-Q4"];
+      const matInfo = snap.materials[material] || snap.materials["EN8"];
+      const hRate = material === "40Cr4 forging" ? 1450 : (material === "20MnCr5" ? 950 : 850);
+
+      const newRfq = {
+        id,
+        receivedDate: "2026-11-02",
+        dueDate: "2026-11-06",
+        slaDaysElapsed: 0.2,
+        customer,
+        customerGstin: "27AABCC1204F1Z2",
+        partName,
+        partNumber: "CUST-NEW-001",
+        drawingRev: "DRW-NEW-RevA",
+        material,
+        grossWt,
+        netWt: Number((grossWt * 0.8).toFixed(2)),
+        annualVolume,
+        volumes: [Math.round(annualVolume * 0.5), annualVolume, Math.round(annualVolume * 1.5)],
+        rateSnapshotId: "RM-2026-Q4",
+        matRateOverride: matInfo.baseRate,
+        scrapRateOverride: matInfo.scrapRate,
+        operations: [
+          { opNo: 10, name: "Primary Forging / Turning & Finishing Cell", cycleMin: cycleTime, hourRate: hRate, setupMin: 60 }
+        ],
+        rejectionPct: 1.5,
+        overheadPct: 14.0,
+        packingPerPc: 2.00,
+        freightPerPc: 1.50,
+        marginPct: 12.0,
+        batchesPerYear: 12,
+        owner: "Rajesh Kulkarni",
+        status: "Estimating",
+        statusReason: "Created manually — costing in progress",
+        routingVerifiedBy: null,
+        approvedBy: null,
+        aiVerified: true,
+        routingSourceRef: "Manual Estimator Entry"
+      };
+
+      state.rfqs.unshift(newRfq);
+      state.activeRfqId = id;
+      closeNewManualRfqModal();
+      switchTab("costing");
+      showToast(`Created ${id} and opened in Part Costing Workbench.`);
+    }
+
+    function openAuthModal() {
+      const list = document.getElementById("ndaAuditLogList");
+      if (list) {
+        list.innerHTML = state.auditLog.map(item => `<li>• ${item}</li>`).join("");
+      }
+      document.getElementById("authModal").classList.remove("hidden");
+    }
+    function closeAuthModal() {
+      document.getElementById("authModal").classList.add("hidden");
+    }
+
+    function refreshAllViews() {
+      renderRfqRegister();
+      renderIntakeView();
+      renderCostingWorkbench();
+      renderRateMastersView();
+      renderApprovalsView();
+      renderQuoteSheet();
+      renderHistoryTable();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      refreshAllViews();
+    });
+  </script>
+</body>
+</html>
